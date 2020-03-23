@@ -1,4 +1,4 @@
-#OBJS specifies which files to compile as part of the project
+#OBJS specif.ies which files to compile as part of the project
 OBJS = Game_v1.c
 
 #OBJ_NAME specifies the name of our exectuable
