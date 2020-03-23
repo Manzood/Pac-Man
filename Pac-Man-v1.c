@@ -32,7 +32,9 @@
 //int xpos=WIDTH/2, ypos=HEIGHT/2, xspeed=10, yspeed=10;
 int FPS = 80;
 bool up=false, down=false, left=false, right=false;
-char *pacmanimage = "midimageleft.png";
+char *pacmanimage = "PacManOpen-right.png";
+int imagetoggle=0; //0=closed,1=mid-range open mouth and 2=fully open mouth
+int previoustoggle=0;
 
 //So these two variables determine the logic behind which direction Pac-Man will turn
 //In the original game, the direction you entered was saved so that the second you hit a dead end Pac-Man would change direction
@@ -41,6 +43,7 @@ char *pacmanimage = "midimageleft.png";
 //The variable direction just stores the current direction Pac-Man is headed, while nextdirection stores the next input given
 //If the next direction and current direction complement each other, direction changes immediately.
 //Otherwise, direction changes only after Pac-Man encounters a dead end
+
 int direction=0;
 int nextdirection=0;
 bool teleporting=false;
@@ -333,6 +336,51 @@ void stopplayer(Uint32 code)
 		right=false;
 }
 
+const char* changeimage(Uint32 *starttime)
+{
+	unsigned int currenttime=SDL_GetTicks();
+	if (currenttime-*starttime>80)
+	{
+		*starttime=currenttime;
+		if (imagetoggle==0||imagetoggle==2)
+		{
+			previoustoggle=imagetoggle;
+			imagetoggle=1;
+			if (direction==DIRECTIONRIGHT)
+				return "PacManMid-right.png";
+			else if (direction==DIRECTIONLEFT)
+				return "PacManMid-left.png";
+			else if (direction==DIRECTIONUP)
+				return "PacManMid-up.png";
+			else if (direction==DIRECTIONDOWN)
+				return "PacManMid-down.png";
+		}
+		else 
+		{
+			if (previoustoggle==0)
+			{
+				previoustoggle=imagetoggle;
+				imagetoggle=2;
+				if (direction==DIRECTIONRIGHT)
+					return "PacManOpen-right.png";
+				else if (direction==DIRECTIONLEFT)
+					return "PacManOpen-left.png";
+				else if (direction==DIRECTIONUP)
+					return "PacManOpen-up.png";
+				else if (direction==DIRECTIONDOWN)
+					return "PacManOpen-down.png";
+			}
+			else
+			{
+				previoustoggle=imagetoggle;
+				imagetoggle=0;
+				return "PacManClosed.png";
+			}
+		}
+	}
+	return pacmanimage;
+}
+
 int main()
 {
 	//function that initialises everything in the SDL library
@@ -348,11 +396,11 @@ int main()
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	SDL_SetWindowFullscreen(window, 0);
 	SDL_RenderPresent(renderer);
-	SDL_Surface *PacMan=IMG_Load("midimageleft.png");
+	SDL_Surface *PacMan=IMG_Load(pacmanimage);
 	SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer,PacMan);
-
 	SDL_Rect pacman;
 	SDL_QueryTexture(PacMan,NULL,NULL,&pacman.w,&pacman.h);
+
 	pacman.w=SCALE;
 	pacman.h=SCALE;
 	pacman.x=WIDTH/2-SCALE/2;
@@ -384,6 +432,8 @@ int main()
 
 	bool playing=1;
 	Uint32 code;
+	int temp=0;
+	Uint32 *starttime=&temp;
 	
 	while(playing)
 	{
@@ -404,6 +454,17 @@ int main()
 			}
 		}
 
+		//the following is responsible for the animation of Pac Man
+		pacmanimage=changeimage(starttime);
+
+		SDL_Surface *PacMan=IMG_Load(pacmanimage);
+		SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer,PacMan);
+		SDL_Rect pacman;
+		SDL_QueryTexture(PacMan,NULL,NULL,&pacman.w,&pacman.h);
+
+		pacman.w=SCALE;
+		pacman.h=SCALE;
+
 		//Moves the player
 		player=move(player);
 		pacman.x=player.x;
@@ -421,17 +482,3 @@ int main()
 
 	return 0;
 }
-
-//creation of a surface
-	/*SDL_Surface* surface;
-	surface = surface = IMG_Load("white_block.png");
-	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-	SDL_FreeSurface(surface);
-			
-	//to get control over the position of the image
-	SDL_Rect dest;
-	SDL_QueryTexture(texture, NULL, NULL, &dest.w, &dest.h);
-
-	dest.x = WIDTH/2;
-	dest.y = HEIGHT/2;
-	*/

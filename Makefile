@@ -1,8 +1,8 @@
 #OBJS specif.ies which files to compile as part of the project
-OBJS = Game_v1.c
+OBJS = Pac-Man-v1.c
 
 #OBJ_NAME specifies the name of our exectuable
-OBJ_NAME = Game_v1
+OBJ_NAME = PacMan
 
 #This is the target that compiles our executable
 all : $(OBJS)
