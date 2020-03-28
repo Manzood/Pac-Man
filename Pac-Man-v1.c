@@ -2,8 +2,10 @@
 #include<SDL2/SDL.h>
 #include<SDL2/SDL_image.h>
 #include<SDL2/SDL_timer.h>
+#include<SDL2/SDL_ttf.h>
 #include<stdbool.h>
 #include<math.h>
+#include<time.h>
 
 #define WIDTH 570
 #define HEIGHT 630
@@ -30,23 +32,29 @@
 //global declaration of the player x and y coordinates and speeds
 //along with the global declaration of other seemingly necessary variables, of course
 //int xpos=WIDTH/2, ypos=HEIGHT/2, xspeed=10, yspeed=10;
-int FPS = 80;
+int FPS = 60;
 bool up=false, down=false, left=false, right=false;
 char *pacmanimage = "PacManOpen-right.png";
 int imagetoggle=0; //0=closed,1=mid-range open mouth and 2=fully open mouth
 int previoustoggle=0;
+int score=0;
+int pelletcount=0;
+SDL_Color White = {255, 255, 255};
 
-//So these two variables determine the logic behind which direction Pac-Man will turn
+//So these three variables determine the logic behind which direction Pac-Man will turn
 //In the original game, the direction you entered was saved so that the second you hit a dead end Pac-Man would change direction
 //That added to the tactical element of the game, and made it feel very premium
 //This is an attempt to recreate that
 //The variable direction just stores the current direction Pac-Man is headed, while nextdirection stores the next input given
 //If the next direction and current direction complement each other, direction changes immediately.
 //Otherwise, direction changes only after Pac-Man encounters a dead end
+//the third variable, "teleporting", checks if pac man is, in fact, teleporting, and therefore prompts the behaviour in that situation
 
 int direction=0;
 int nextdirection=0;
 bool teleporting=false;
+int level=1;
+int highscore=0;
 
 struct sprite
 {
@@ -83,6 +91,8 @@ int grid[21][19]={
 	{0,0,0,0,0,0,0,0,0, 0 ,0,0,0,0,0,0,0,0,0}
 };
 
+int pellets[42][38];
+
 //basic initialisation function for SDL
 int init()
 {
@@ -106,10 +116,10 @@ void togglefullscreen(SDL_Window* window)
 		SDL_SetWindowFullscreen(window, FullScreen);
 }
 
-void updatescreen(SDL_Renderer* renderer, SDL_Texture *backgroundtexture, SDL_Texture *PacMan, SDL_Rect *pacman)
+void updatescreen(SDL_Renderer* renderer, SDL_Texture *backgroundtexture, SDL_Texture *PacMan, SDL_Rect *pacman,SDL_Rect *bg)
 {
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-	SDL_RenderCopy(renderer,backgroundtexture,NULL,NULL);
+	SDL_RenderCopy(renderer,backgroundtexture,NULL,bg);
 	SDL_RenderCopy(renderer,PacMan,NULL,pacman);
 }
 
@@ -126,12 +136,28 @@ void drawrectangle(SDL_Renderer* renderer, int x, int y, int w, int h)
 	SDL_RenderDrawRect(renderer, &rect);
 }
 
+struct sprite initialiseblinky()
+{
+	struct sprite blinky;
+	blinky.x=WIDTH/2-15;
+	blinky.y=HEIGHT/2-75;
+	blinky.xspeed=SPEED;
+	blinky.yspeed=SPEED;
+	return blinky;
+}
+
+struct sprite initialisepinky () 
+{
+	struct sprite pinky;
+	//pinky.x=
+}
+
 //function that controls the movement of pacman, and maybe the ghosts as well (it can be pretty generalized)
 //my coup de grace, pretty much
 struct sprite move (struct sprite s) 
 {
 	int gridx=s.x/30;
-	int gridy=s.y/30;
+	int gridy=(s.y-30)/30;
 	
 	//the code that stores the next click of the user, and thereby allows them to change direction preemptively
 	if (direction+nextdirection==0)
@@ -286,6 +312,23 @@ struct sprite move (struct sprite s)
 	return s;
 }
 
+int choosedirectionforenemy(int enemydirection)
+{
+	if (level==1)
+	{
+		int randomnumbergenerated=rand()%3;
+		while (randomnumbergenerated==0)
+		{
+			randomnumbergenerated=rand()%3;
+		}
+		int multiplier=rand()%2;
+		if (multiplier)
+			return randomnumbergenerated;
+		else
+			return randomnumbergenerated*(-1);
+	}
+}
+
 //function that starts player movement when the key is pressed
 void startplayer(Uint32 code)
 {
@@ -339,7 +382,7 @@ void stopplayer(Uint32 code)
 const char* changeimage(Uint32 *starttime)
 {
 	unsigned int currenttime=SDL_GetTicks();
-	if (currenttime-*starttime>80)
+	if (currenttime-*starttime>60)
 	{
 		*starttime=currenttime;
 		if (imagetoggle==0||imagetoggle==2)
@@ -381,43 +424,274 @@ const char* changeimage(Uint32 *starttime)
 	return pacmanimage;
 }
 
+void calculateinitialpellets ()
+{
+	for (int i=0;i<21;i++)
+	{
+		for (int j=0;j<19;j++)
+		{
+			if (grid[i][j]==0||(i>=6&&i<=14)&&(j>=5&&j<=13)||((i>=7&&i<13)&&(j<4||j>14)))
+			{
+				pellets[2*i][2*j]=0;
+				pellets[2*i+1][2*j]=0;
+				pellets[2*i][2*j+1]=0;
+				pellets[2*i+1][2*j+1]=0;
+			}
+			else
+			{
+				if (grid[i-1][j]==0||grid[i][j-1]==0||grid[i-1][j-1]==0)
+					pellets[2*i][2*j]=0;
+				else
+				{
+					pelletcount++;
+					pellets[2*i][2*j]=1;
+				}
+				if (grid[i][j-1]==0)
+					pellets[2*i+1][2*j]==0;
+				else
+				{
+					pelletcount++;
+					pellets[2*i+1][2*j]=1;
+				}
+				if (grid[i-1][j]==0)
+					pellets[2*i][2*j+1]=0;
+				else
+				{
+					pelletcount++;
+					pellets[2*i][2*j+1]=1;
+				}
+				pelletcount++;
+				pellets[2*i+1][2*j+1]=1;
+			}
+		}
+	}
+	pellets[30][17]=0;
+	pellets[30][21]=0;
+	pellets[27][28]=0;
+	pellets[19][28]=0;
+	pellets[31][18]=0;
+	pellets[31][19]=0;
+	pellets[31][20]=0;
+	pellets[19][8]=0;
+	pelletcount-=8;
+	//printf("%d\n",pellets[3][34]);
+}
+
+void printpelletgrid ()
+{
+	for (int i=0;i<42;i++)
+	{
+		for (int j=0;j<38;j++)
+			printf("%d ",pellets[i][j]);
+		printf("\n");
+	}
+}
+
+int animationdirection=1;
+int largepelletsize=8;
+
+void drawpellets(SDL_Renderer *renderer, Uint32 *animationstarttime)
+{
+	unsigned int currenttime=SDL_GetTicks();
+	for (int i=0;i<42;i++)
+	{
+		for (int j=0;j<38;j++)
+		{
+			if (pellets[i][j]==1)
+			{
+				//printf("%d %d\n",20*i,20*j);
+				SDL_Rect rect;
+				if ((i==5&&j==3)||(i==5&&j==35)||(i==37&&j==3)||(i==37&&j==35))
+				{
+					if (currenttime-*animationstarttime>=120)
+					{
+						if (largepelletsize==9||largepelletsize==7)
+						{
+							if (animationdirection==1)
+								animationdirection=-1;
+							else
+								animationdirection=1;
+						}
+						largepelletsize+=animationdirection;
+						*animationstarttime=currenttime;
+					}
+					rect.x=15*j-2;
+					rect.y=15*i-2+30;
+					rect.w=largepelletsize;
+					rect.h=largepelletsize;
+				}
+				else
+				{
+					rect.x=15*j;
+					rect.y=15*i+30;
+					rect.w=4;
+					rect.h=4;
+				}
+
+				SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+				SDL_RenderDrawRect(renderer, &rect);
+				SDL_RenderFillRect(renderer, &rect);
+			}
+		}
+	}
+}
+
+void checkcollisionwithpellets (struct sprite s) 
+{
+	int pacmanx=s.x/15;
+	int pacmany=(s.y-30)/15;
+	pacmanx++;
+	pacmany++;
+	int scoretobeadded=10;
+	if (pacmany==5)
+	{
+		if (pacmanx==3||pacmanx==35)
+			scoretobeadded=50;
+	}
+	else if (pacmany==37)
+	{
+		if (pacmanx==3||pacmanx==35)
+			scoretobeadded=50;
+	}
+	//printf("%d %d %d\n",pacmanx,pacmany, pellets[pacmany][pacmanx]);
+	if (direction==DIRECTIONDOWN)
+	{
+		if (pellets[pacmany][pacmanx]==1)
+		{
+			//printf("Made it here\n");
+			pellets[pacmany][pacmanx]=0;
+			score+=scoretobeadded;
+			pelletcount--;
+		}
+	}
+	else if (direction==DIRECTIONUP)
+	{
+		if (pellets[pacmany][pacmanx]==1)
+		{
+			pellets[pacmany][pacmanx]=0;
+			score+=scoretobeadded;
+			pelletcount--;
+		}
+	}
+	else if (direction==DIRECTIONRIGHT)
+	{
+		if (pellets[pacmany][pacmanx]==1)
+		{
+			pellets[pacmany][pacmanx]=0;
+			score+=scoretobeadded;
+			pelletcount--;
+		}
+	}
+	else if (direction==DIRECTIONLEFT)
+	{
+		if (pellets[pacmany][pacmanx]==1)
+		{
+			pellets[pacmany][pacmanx]=0;
+			score+=scoretobeadded;
+			pelletcount--;
+		}
+	}
+}
+
+void displayscoreboard(TTF_Font* Sans,SDL_Renderer *renderer)
+{
+	//Makes a surface and texture to display said score
+	char scorestr[5];
+	sprintf(scorestr,"%d",score);
+	SDL_Surface* messagesurface = TTF_RenderText_Solid(Sans,scorestr,White);
+	SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer,messagesurface);
+
+	SDL_Rect messagerect;
+	messagerect.x=78;
+	messagerect.y=3;
+	messagerect.h=24;
+	if (score==0)
+		messagerect.w=15;
+	else if (score<10)
+		messagerect.w=20;
+	else if (score<100)
+		messagerect.w=30;
+	else if (score<1000)
+		messagerect.w=40;
+	else
+		messagerect.w=50;
+
+	SDL_RenderCopy(renderer,Message,NULL,&messagerect);
+
+	SDL_FreeSurface(messagesurface);
+}
+
 int main()
 {
 	//function that initialises everything in the SDL library
 	if (init()==-1)
 		return -1;
+	if (TTF_Init()<0)
+		return -1;
+	//printf("Made it here\n");
 
-	//Creation of a window and setting up of the renderer with a default colour
-	SDL_Window* window = SDL_CreateWindow("GAME", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_ALLOW_HIGHDPI);
+	//initialises the random function seed with the system time
+	srand(time(0));
+
+	//initialises the window and the renderer
+	SDL_Window* window = SDL_CreateWindow("GAME", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT+30, SDL_WINDOW_ALLOW_HIGHDPI);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window,-1,0);
+	
+	//initialises the image for the background
 	SDL_Surface *background=IMG_Load("pacman_grid.png");
 	SDL_Texture *backgroundtexture = SDL_CreateTextureFromSurface(renderer, background);
 	SDL_FreeSurface(background);
+	
+	//this makes the window stop being fullscreen
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	SDL_SetWindowFullscreen(window, 0);
 	SDL_RenderPresent(renderer);
+	
+	//Loads up Pac Man, and sets his initial position and 
 	SDL_Surface *PacMan=IMG_Load(pacmanimage);
 	SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer,PacMan);
 	SDL_Rect pacman;
 	SDL_QueryTexture(PacMan,NULL,NULL,&pacman.w,&pacman.h);
-
 	pacman.w=SCALE;
 	pacman.h=SCALE;
-	pacman.x=WIDTH/2-SCALE/2;
-	pacman.y=HEIGHT/2+SCALE/2;
+	//this rectangle could have had its x and y coordinates set over here, but they will be assigned to the x and y coordinates of the structure player.
 
+	//initialises the background, and sets the whole rectangle for the background image
 	SDL_Rect bg;
 	SDL_QueryTexture(backgroundtexture, NULL, NULL, &bg.w, &bg.h);
+	bg.w=WIDTH;
+	bg.h=HEIGHT;
 	bg.x=0;
-	bg.y=0;
+	bg.y=30;
 
+	//initialises the player completely
 	struct sprite player;
 	player.x=WIDTH/2-SCALE/2;
-	player.y=HEIGHT/2+SCALE/2;
+	player.y=HEIGHT/2+SCALE/2+150;
 	player.xspeed=SPEED;
 	player.yspeed=SPEED;
 
-	//Checks for errors in initialisation and creation of the window, and prints the error
+	struct sprite blinky;
+	blinky=initialiseblinky();
+
+	//initialises the enemies completely
+
+
+	//Loads up the font that will be used to display the score
+	TTF_Font* font = TTF_OpenFont("sans.ttf", 24);
+	SDL_Surface* messagesurface = TTF_RenderText_Solid(font,"Score:",White);
+	SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer,messagesurface);
+
+	SDL_Rect messagerect;
+	messagerect.x=8;
+	messagerect.y=3;
+	messagerect.h=24;
+	messagerect.w=70;
+
+	SDL_RenderCopy(renderer,Message,NULL,&messagerect);
+	SDL_FreeSurface(messagesurface);
+
+	//Checks for errors in initialisation and creation of the window, the background, and the image for PacMan itself and prints the error
 	if (window == NULL)
 		printf("Window could not be created : %s\n", SDL_GetError());
 
@@ -425,15 +699,21 @@ int main()
 		printf("Background could not be initialized properly: %s\n", SDL_GetError());
 
 	if (PacMan==NULL)
-		printf("You picked the wrong image you dolt\n");
+		printf("The image for Pac Man did not initialise properly\n");
 
 	//creates a window event object for mouse movements, button clicks, etc
 	SDL_Event event;
 
+	//Some important variables that need to be initialised here;
 	bool playing=1;
 	Uint32 code;
 	int temp=0;
+	int temp2=0;
 	Uint32 *starttime=&temp;
+	Uint32 *pelletstarttime=&temp2;
+
+	calculateinitialpellets();
+	//printpelletgrid();
 	
 	while(playing)
 	{
@@ -469,14 +749,33 @@ int main()
 		player=move(player);
 		pacman.x=player.x;
 		pacman.y=player.y;
+
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 		SDL_RenderClear(renderer);
-		updatescreen(renderer,backgroundtexture,PacManTexture,&pacman);
-		//drawrectangle(renderer, player.x, player.y, SCALE, SCALE);
-		//drawcircle(renderer,10,10,10);
+		
+		//All actual displaying and rendering happens in this final bit, after all calculations have been completed
+		updatescreen(renderer,backgroundtexture,PacManTexture,&pacman,&bg);
+		checkcollisionwithpellets(player);
+		//printpelletgrid();
+		drawpellets(renderer,pelletstarttime);
+		//printf("%d\n",score);
+
+		if (font==NULL) 
+		{
+			printf("Failed to load font\n");
+			printf("Error is: %s\n",TTF_GetError());
+		}
+		else
+		{
+			SDL_RenderCopy(renderer,Message,NULL,&messagerect);
+			displayscoreboard(font,renderer);
+		}
+		drawrectangle(renderer, blinky.x, blinky.y, SCALE, SCALE);
 		SDL_RenderPresent(renderer);
-		SDL_Delay(1000 / 60);
+		SDL_Delay(1000 / FPS);
 	}
 
+	SDL_FreeSurface(messagesurface);
 	SDL_DestroyWindow(window);
 	SDL_Quit;
 

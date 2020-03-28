@@ -6,4 +6,4 @@ OBJ_NAME = PacMan
 
 #This is the target that compiles our executable
 all : $(OBJS)
-	gcc $(OBJS) -w -lSDL2 -lSDL2_image -o $(OBJ_NAME)
+	gcc $(OBJS) -w -lSDL2 -lSDL2_image -lSDL2_ttf -o $(OBJ_NAME)
