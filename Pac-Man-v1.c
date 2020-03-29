@@ -19,19 +19,21 @@
 #define DIRECTIONLEFT -2
 
 /*itenerary :
-1)Making Pac-Man move about the grid, entirely as he pleases 
-2)Making the grid image the background image of the entire game
-3)Adding enemies
-4)Enemy AI is a must, with different levels of difficulty
-5)Adding pellets at every locatiom, alongside making them disappear when Pac-Man interacts with them
-6)Cherries!
+3)Adding enemies (inky,pinky and Clyde haven't been added yet)
+4)Enemy AI is a must, with different levels of difficulty (random AI has been added)
+6)Cherries! //Might never happen, honestly
 7)Multiple lives, level resets whem all the cherries are collected, score
-8)Further improvements not mentioned here that are bound to cross my mind as coding progresses
+8)Large pellets make enemies go insane, their directions must be decided by changedirection, also, an animation for eating the enemy (or at least screen slowdown) is a must
+9)Display lives
+10)Loading screen (yikes)
+11)Game over screen, screen between lives, screen between levels
+12)Perhaps the screen between lives and the screen between levels would be the same
 */
 
 //global declaration of the player x and y coordinates and speeds
 //along with the global declaration of other seemingly necessary variables, of course
 //int xpos=WIDTH/2, ypos=HEIGHT/2, xspeed=10, yspeed=10;
+
 int FPS = 90;
 bool up=false, down=false, left=false, right=false;
 char *pacmanimage = "PacManOpen-right.png";
