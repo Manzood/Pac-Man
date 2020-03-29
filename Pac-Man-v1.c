@@ -32,7 +32,7 @@
 //global declaration of the player x and y coordinates and speeds
 //along with the global declaration of other seemingly necessary variables, of course
 //int xpos=WIDTH/2, ypos=HEIGHT/2, xspeed=10, yspeed=10;
-int FPS = 60;
+int FPS = 90;
 bool up=false, down=false, left=false, right=false;
 char *pacmanimage = "PacManOpen-right.png";
 int imagetoggle=0; //0=closed,1=mid-range open mouth and 2=fully open mouth
@@ -48,11 +48,12 @@ SDL_Color White = {255, 255, 255};
 //The variable direction just stores the current direction Pac-Man is headed, while nextdirection stores the next input given
 //If the next direction and current direction complement each other, direction changes immediately.
 //Otherwise, direction changes only after Pac-Man encounters a dead end
-//the third variable, "teleporting", checks if pac man is, in fact, teleporting, and therefore prompts the behaviour in that situation
+//the third variable, "s.teleporting", checks if pac man is, in fact, s.teleporting, and therefore prompts the behaviour in that situation
 
 int direction=0;
 int nextdirection=0;
-bool teleporting=false;
+int enemydirection=DIRECTIONLEFT;
+int nextenemydirection=0;
 int level=1;
 int highscore=0;
 
@@ -62,6 +63,7 @@ struct sprite
 	int y;
 	int xspeed;
 	int yspeed;
+	bool teleporting;
 };
 
 //zero is stop... one is go. Also, the zero in the 8th line (second line above halfway point) should be coloured orange
@@ -116,7 +118,7 @@ void togglefullscreen(SDL_Window* window)
 		SDL_SetWindowFullscreen(window, FullScreen);
 }
 
-void updatescreen(SDL_Renderer* renderer, SDL_Texture *backgroundtexture, SDL_Texture *PacMan, SDL_Rect *pacman,SDL_Rect *bg)
+void updatescreen(SDL_Renderer* renderer, SDL_Texture *backgroundtexture, SDL_Texture *PacMan, SDL_Texture *BlinkyTexture, SDL_Rect *pacman,SDL_Rect *bg, SDL_Rect *blinkyrect)
 {
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	SDL_RenderCopy(renderer,backgroundtexture,NULL,bg);
@@ -141,8 +143,9 @@ struct sprite initialiseblinky()
 	struct sprite blinky;
 	blinky.x=WIDTH/2-15;
 	blinky.y=HEIGHT/2-75;
-	blinky.xspeed=SPEED;
-	blinky.yspeed=SPEED;
+	blinky.xspeed=SPEED-1;
+	blinky.yspeed=SPEED-1;
+	blinky.teleporting=false;
 	return blinky;
 }
 
@@ -158,6 +161,7 @@ struct sprite move (struct sprite s)
 {
 	int gridx=s.x/30;
 	int gridy=(s.y-30)/30;
+	//printf("%d %d\n",gridy,gridx);
 	
 	//the code that stores the next click of the user, and thereby allows them to change direction preemptively
 	if (direction+nextdirection==0)
@@ -170,7 +174,7 @@ struct sprite move (struct sprite s)
 		{
 			if (nextdirection==DIRECTIONUP)
 			{
-				if (s.x%30==0)
+				if (s.x%30==0 && !(gridy==9&&(gridx<4||gridx>14)))
 				{
 					if(grid[gridy-1][gridx]==1)
 						direction=nextdirection;
@@ -178,7 +182,7 @@ struct sprite move (struct sprite s)
 			}
 			else
 			{
-				if (s.x%30==0)
+				if (s.x%30==0 && !(gridy==9&&(gridx<4||gridx>14)))
 					if (grid[gridy+1][gridx]==1)
 						direction=nextdirection;
 			}
@@ -225,7 +229,7 @@ struct sprite move (struct sprite s)
 	}
 	if (direction==DIRECTIONLEFT)
 	{
-		if (teleporting==false)
+		if (s.teleporting==false)
 		{
 			if (grid[gridy][gridx]==1 && s.x%30>=s.xspeed)
 			{
@@ -239,7 +243,7 @@ struct sprite move (struct sprite s)
 			{
 				if (gridx==0)
 				{
-					teleporting=true;
+					s.teleporting=true;
 				}
 				else if (grid[gridy][gridx-1]==0)
 					direction=nextdirection;
@@ -252,7 +256,7 @@ struct sprite move (struct sprite s)
 			if(s.x==-30)
 			{
 				s.x=WIDTH;
-				teleporting=false;
+				s.teleporting=false;
 			}
 			else
 				s.x-=s.xspeed;
@@ -260,7 +264,7 @@ struct sprite move (struct sprite s)
 	}
 	if (direction==DIRECTIONRIGHT)
 	{
-		if (teleporting==false) 
+		if (s.teleporting==false) 
 		{
 			if (grid[gridy][gridx+1]==1 && s.x%30+s.xspeed<=30)
 			{
@@ -273,7 +277,7 @@ struct sprite move (struct sprite s)
 			else
 			{
 				if (gridx==18||gridx==19)
-					teleporting=true;
+					s.teleporting=true;
 				else if (grid[gridy][gridx+1]==0)
 					direction=nextdirection;
 				else
@@ -285,7 +289,7 @@ struct sprite move (struct sprite s)
 			if (s.x==WIDTH+30)
 			{
 				s.x=-30;
-				teleporting=false;
+				s.teleporting=false;
 			}
 			else
 				s.x+=s.xspeed;
@@ -312,21 +316,191 @@ struct sprite move (struct sprite s)
 	return s;
 }
 
-int choosedirectionforenemy(int enemydirection)
+int choosedirectionforenemy()
 {
-	if (level==1)
+	int randomnumbergenerated=rand()%3;
+	while (randomnumbergenerated==0)
 	{
-		int randomnumbergenerated=rand()%3;
-		while (randomnumbergenerated==0)
-		{
-			randomnumbergenerated=rand()%3;
-		}
-		int multiplier=rand()%2;
-		if (multiplier)
-			return randomnumbergenerated;
-		else
-			return randomnumbergenerated*(-1);
+		randomnumbergenerated=(rand()%2)+1;
 	}
+	int multiplier=rand()%2;
+	if (multiplier)
+		return randomnumbergenerated;
+	else
+		return randomnumbergenerated*(-1);
+}
+
+struct sprite moveenemy (struct sprite enemy)
+{
+	int gridx=enemy.x/30;
+	int gridy=(enemy.y-30)/30;
+
+	if (enemydirection==nextenemydirection || nextenemydirection==0)
+	{
+		nextenemydirection=choosedirectionforenemy();
+	}
+
+	//following is untested as of yet
+
+	if (nextenemydirection==DIRECTIONUP||nextenemydirection==DIRECTIONDOWN)
+	{
+		if (nextenemydirection==DIRECTIONUP)
+		{
+			if (enemy.x%30==0 && !(gridy==9&&(gridx<4||gridx>14)))
+			{
+				if(grid[gridy-1][gridx]==1)
+					enemydirection=nextenemydirection;
+			}
+		}
+		else
+		{
+			if (enemy.x%30==0 && !(gridy==9&&(gridx<4||gridx>14)))
+				if (grid[gridy+1][gridx]==1)
+					enemydirection=nextenemydirection;
+		}
+	}
+	else if (nextenemydirection==DIRECTIONLEFT||nextenemydirection==DIRECTIONRIGHT)
+	{
+		if (nextenemydirection==DIRECTIONLEFT)
+		{
+			if (enemy.y%30==0)
+			{
+				if (grid[gridy][gridx-1]==1)
+					enemydirection=nextenemydirection;
+			}
+		}
+		else
+		{
+			if (enemy.y%30==0)
+			{
+				if (grid[gridy][gridx+1]==1)
+					enemydirection=nextenemydirection;
+			}
+		}
+	}
+
+
+	//works beyond this point
+
+	if (enemydirection==DIRECTIONUP)
+	{
+		if (grid[gridy][gridx]==1 && enemy.y%30>=enemy.yspeed)
+		{
+			enemy.y-=enemy.yspeed;
+		}
+		else if (grid[gridy][gridx]==1 && enemy.y%30>0)
+		{
+			enemy.y-=enemy.y%30;
+		}
+		else
+		{
+			if (grid[gridy-1][gridx]==0) {
+				enemydirection=nextenemydirection;
+			}
+			else
+				enemy.y-=enemy.yspeed;
+		}
+	}
+	if (enemydirection==DIRECTIONLEFT)
+	{
+		if (enemy.teleporting==false)
+		{
+			if (grid[gridy][gridx]==1 && enemy.x%30>=enemy.xspeed)
+			{
+				enemy.x-=enemy.xspeed;
+			}
+			else if (grid[gridy][gridx]==1 && enemy.x%30>0)
+			{
+				enemy.x-=enemy.x%30;
+			}
+			else
+			{
+				if (gridx==0)
+				{
+					enemy.teleporting=true;
+				}
+				else if (grid[gridy][gridx-1]==0)
+					enemydirection=nextenemydirection;
+				else
+					enemy.x-=enemy.xspeed;
+			}
+		}
+		else
+		{
+			if(enemy.x==-30)
+			{
+				enemy.x=WIDTH;
+				enemy.teleporting=false;
+			}
+			else
+				enemy.x-=enemy.xspeed;
+		}
+	}
+	if (enemydirection==DIRECTIONRIGHT)
+	{
+		if (enemy.teleporting==false) 
+		{
+			if (grid[gridy][gridx+1]==1 && enemy.x%30+enemy.xspeed<=30)
+			{
+				enemy.x+=enemy.xspeed;
+			}
+			else if (grid[gridy][gridx+1]==1 && enemy.x%30+enemy.xspeed>30)
+			{
+				enemy.x+=30-enemy.x%30;
+			}
+			else
+			{
+				if (gridx==18||gridx==19)
+					enemy.teleporting=true;
+				else if (grid[gridy][gridx+1]==0)
+					enemydirection=nextenemydirection;
+				else
+				 	enemy.x+=enemy.xspeed;
+			}
+		}
+		else
+		{
+			if (enemy.x==WIDTH+30)
+			{
+				enemy.x=-30;
+				enemy.teleporting=false;
+			}
+			else
+				enemy.x+=enemy.xspeed;
+		}
+	}
+	if (enemydirection==DIRECTIONDOWN)
+	{
+		if (grid[gridy+1][gridx]==1 && enemy.y%30+enemy.yspeed<=30)
+		{
+			enemy.y+=enemy.yspeed;
+		}
+		else if (grid[gridy+1][gridx]==1 && enemy.y%30+enemy.yspeed>30)
+		{
+			enemy.y+=30-enemy.y%30;
+		}
+		else
+		{
+			if (grid[gridy+1][gridx]==0)
+				enemydirection=nextenemydirection;
+			else
+				enemy.y+=enemy.yspeed;
+		}
+	}
+
+	return enemy;
+}
+
+int checkcollisionwithenemy (struct sprite enemy, struct sprite pacman)
+{
+	int distancex=enemy.x-pacman.x;
+	distancex=distancex*distancex;
+	int distancey=enemy.y-pacman.y;
+	distancey=distancey*distancey;
+	if (distancex+distancey<=900)
+		return 1;
+	else
+		return 0;
 }
 
 //function that starts player movement when the key is pressed
@@ -613,13 +787,20 @@ void displayscoreboard(TTF_Font* Sans,SDL_Renderer *renderer)
 		messagerect.w=30;
 	else if (score<1000)
 		messagerect.w=40;
-	else
+	else if (score<10000)
 		messagerect.w=50;
+	else
+		messagerect.w=60;
 
 	SDL_RenderCopy(renderer,Message,NULL,&messagerect);
 
 	SDL_FreeSurface(messagesurface);
 }
+
+
+
+
+
 
 int main()
 {
@@ -647,7 +828,7 @@ int main()
 	SDL_SetWindowFullscreen(window, 0);
 	SDL_RenderPresent(renderer);
 	
-	//Loads up Pac Man, and sets his initial position and 
+	//Loads up Pac Man, and sets his initial position and size
 	SDL_Surface *PacMan=IMG_Load(pacmanimage);
 	SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer,PacMan);
 	SDL_Rect pacman;
@@ -655,6 +836,14 @@ int main()
 	pacman.w=SCALE;
 	pacman.h=SCALE;
 	//this rectangle could have had its x and y coordinates set over here, but they will be assigned to the x and y coordinates of the structure player.
+
+	//loads up blinky, and sets up his initial position and size
+	SDL_Surface *BlinkySurface=IMG_Load("blinky.png");
+	SDL_Texture *BlinkyTexture = SDL_CreateTextureFromSurface(renderer,BlinkySurface);
+	SDL_Rect blinkyrect;
+	SDL_QueryTexture(BlinkySurface,NULL,NULL,&blinkyrect.w,&blinkyrect.h);
+	blinkyrect.w=SCALE;
+	blinkyrect.h=SCALE;
 
 	//initialises the background, and sets the whole rectangle for the background image
 	SDL_Rect bg;
@@ -670,9 +859,11 @@ int main()
 	player.y=HEIGHT/2+SCALE/2+150;
 	player.xspeed=SPEED;
 	player.yspeed=SPEED;
+	player.teleporting=false;
 
 	struct sprite blinky;
 	blinky=initialiseblinky();
+	//printf("%d %d\n",blinky.x,blinky.y);
 
 	//initialises the enemies completely
 
@@ -715,8 +906,18 @@ int main()
 	calculateinitialpellets();
 	//printpelletgrid();
 	
+	// int previousticks=0;
+	// int ticks;
+
+	// Ask SDL for the time in milliseconds
+
 	while(playing)
 	{
+		/*ticks=SDL_GetTicks();
+		if (ticks-previousticks>=15) 
+		{
+			previousticks=ticks;
+*/
 		if (SDL_PollEvent(&event))
 		{
 			//checking if the user decides to click on the quit button
@@ -732,6 +933,33 @@ int main()
 				code=event.key.keysym.sym;
 				stopplayer(code);
 			}
+		}
+
+		if (pelletcount==0) {
+			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+			SDL_RenderClear(renderer);
+			calculateinitialpellets();
+			SDL_RenderCopy(renderer,backgroundtexture,NULL,&bg);
+			SDL_RenderPresent(renderer);
+			level++;
+			player.x=WIDTH/2-SCALE/2;
+			player.y=HEIGHT/2+SCALE/2+150;
+			blinky=initialiseblinky();
+			SDL_Delay(1500);
+		}
+
+		if (checkcollisionwithenemy(blinky,player))
+		{
+			SDL_Delay(1500);
+			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+			SDL_RenderClear(renderer);
+			calculateinitialpellets();
+			SDL_RenderCopy(renderer,backgroundtexture,NULL,&bg);
+			SDL_RenderPresent(renderer);
+			level++;
+			player.x=WIDTH/2-SCALE/2;
+			player.y=HEIGHT/2+SCALE/2+150;
+			blinky=initialiseblinky();
 		}
 
 		//the following is responsible for the animation of Pac Man
@@ -750,14 +978,20 @@ int main()
 		pacman.x=player.x;
 		pacman.y=player.y;
 
+		blinky=moveenemy(blinky);
+		blinkyrect.x=blinky.x;
+		blinkyrect.y=blinky.y;
+		//printf("blinky.x=%d\t blinky.y=%d\n",blinky.x,blinky.y);
+
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 		SDL_RenderClear(renderer);
 		
 		//All actual displaying and rendering happens in this final bit, after all calculations have been completed
-		updatescreen(renderer,backgroundtexture,PacManTexture,&pacman,&bg);
+		updatescreen(renderer,backgroundtexture,PacManTexture,BlinkyTexture,&pacman,&bg,&blinkyrect);
 		checkcollisionwithpellets(player);
 		//printpelletgrid();
 		drawpellets(renderer,pelletstarttime);
+		SDL_RenderCopy(renderer,BlinkyTexture,NULL,&blinkyrect);
 		//printf("%d\n",score);
 
 		if (font==NULL) 
@@ -770,8 +1004,10 @@ int main()
 			SDL_RenderCopy(renderer,Message,NULL,&messagerect);
 			displayscoreboard(font,renderer);
 		}
-		drawrectangle(renderer, blinky.x, blinky.y, SCALE, SCALE);
+		//drawrectangle(renderer, blinky.x, blinky.y, SCALE, SCALE);
 		SDL_RenderPresent(renderer);
+
+		//So apparently SDL_Delay is very inefficient and slow, so I should instead be making my own function for smoother movement
 		SDL_Delay(1000 / FPS);
 	}
 
