@@ -34,7 +34,7 @@
 //along with the global declaration of other seemingly necessary variables, of course
 //int xpos=WIDTH/2, ypos=HEIGHT/2, xspeed=10, yspeed=10;
 
-int FPS = 90;
+int FPS = 110;
 bool up=false, down=false, left=false, right=false;
 char *pacmanimage = "PacManOpen-right.png";
 int imagetoggle=0; //0=closed,1=mid-range open mouth and 2=fully open mouth
@@ -76,8 +76,9 @@ struct enemysprite
 	int yspeed;
 	bool teleporting;
 	int direction;
-	int nextdirection;
-	int lastmoved;
+	int ndirection;
+	int startmoves;
+	int timetostart;
 };
 
 //zero is stop... one is go. Also, the zero in the 8th line (second line above halfway point) should be coloured orange
@@ -166,8 +167,9 @@ struct enemysprite initialiseblinky()
 	blinky.yspeed=SPEED-1;
 	blinky.teleporting=false;
 	blinky.direction=DIRECTIONLEFT;
-	blinky.nextdirection=0;
-	blinky.lastmoved=0;
+	blinky.ndirection=0;
+	blinky.startmoves=0;
+	blinky.timetostart=0;
 	return blinky;
 }
 
@@ -179,9 +181,10 @@ struct enemysprite initialisepinky ()
 	pinky.xspeed=SPEED-1;
 	pinky.yspeed=SPEED-1;
 	pinky.teleporting=false;
-	pinky.direction=DIRECTIONLEFT;
-	pinky.nextdirection=0;
-	pinky.lastmoved=0;
+	pinky.direction=0;
+	pinky.ndirection=0;
+	pinky.startmoves=4;
+	pinky.timetostart=10000;
 	return pinky;
 }
 
@@ -193,23 +196,25 @@ struct enemysprite initialiseclyde ()
 	clyde.xspeed=SPEED-1;
 	clyde.yspeed=SPEED-1;
 	clyde.teleporting=false;
-	clyde.direction=DIRECTIONLEFT;
-	clyde.nextdirection=0;
-	clyde.lastmoved=0;
+	clyde.direction=0;
+	clyde.ndirection=0;
+	clyde.startmoves=3;
+	clyde.timetostart=5000;
 	return clyde;
 }
 
 struct enemysprite initialiseinky ()
 {
 	struct enemysprite inky;
-	inky.x=WIDTH/2-45;
-	inky.y=WIDTH/2+15;
+	inky.x=WIDTH/2+15;
+	inky.y=HEIGHT/2-15;
 	inky.xspeed=SPEED-1;
 	inky.yspeed=SPEED-1;
 	inky.teleporting=false;
-	inky.direction=DIRECTIONLEFT;
-	inky.nextdirection=0;
-	inky.lastmoved=0;
+	inky.direction=0;
+	inky.ndirection=0;
+	inky.startmoves=-4;
+	inky.timetostart=15000;
 	return inky;
 }
 
@@ -394,11 +399,39 @@ struct enemysprite moveenemy (struct enemysprite enemy)
 	int gridy=(enemy.y-30)/30;
 	grid[8][9]=1;
 	int enemydirection=enemy.direction;
-	int nextenemydirection=enemy.nextdirection;
+	int nextenemydirection=enemy.ndirection;
+	unsigned int enemytime=SDL_GetTicks();
 
 	if ((enemydirection==nextenemydirection || nextenemydirection==0))
 	{
-		nextenemydirection=choosedirectionforenemy();
+		if (enemytime>enemy.timetostart) 
+		{
+			nextenemydirection=choosedirectionforenemy();
+			if (enemy.startmoves>0) 
+			{
+				if (enemy.startmoves==4) 
+					nextenemydirection=DIRECTIONRIGHT;
+				else if (enemy.startmoves==3)
+					nextenemydirection=DIRECTIONUP;
+				else if (enemy.startmoves==2) 
+					nextenemydirection=DIRECTIONUP;
+				else if (enemy.startmoves==1)
+				{
+					if (enemytime>5000 && enemytime<10000) 
+						nextenemydirection=DIRECTIONRIGHT;
+					else if (enemytime>10000 && enemytime<15000) 
+						nextenemydirection=DIRECTIONLEFT;
+					else 
+						nextenemydirection=DIRECTIONRIGHT;
+				}
+				else if (enemy.startmoves==-4) 
+				{
+					nextenemydirection=DIRECTIONLEFT;
+					enemy.startmoves=4;
+				}
+				enemy.startmoves--;
+			}
+		}
 	}
 	//following is untested as of yet
 
@@ -439,8 +472,15 @@ struct enemysprite moveenemy (struct enemysprite enemy)
 		}
 	}
 
-
 	//works beyond this point
+
+	if (enemydirection==0) 
+	{
+		if (nextenemydirection!=0)
+		{
+			enemydirection=nextenemydirection;
+		}
+	}
 
 	if (enemydirection==DIRECTIONUP)
 	{
@@ -549,7 +589,7 @@ struct enemysprite moveenemy (struct enemysprite enemy)
 	}
 	grid[8][9]=0;
 	enemy.direction=enemydirection;
-	enemy.nextdirection=nextenemydirection;
+	enemy.ndirection=nextenemydirection;
 	return enemy;
 }
 
@@ -988,18 +1028,11 @@ int main()
 	//Some important variables that need to be initialised here;
 	bool playing=1;
 	Uint32 code;
-	int temp=0;
-	int temp2=0;
+	int temp=0,temp2=0,temp3=0;
 	Uint32 *starttime=&temp;
 	Uint32 *pelletstarttime=&temp2;
 
 	calculateinitialpellets();
-	//printpelletgrid();
-	
-	// int previousticks=0;
-	// int ticks;
-
-	// Ask SDL for the time in milliseconds
 
 	while(playing)
 	{
@@ -1036,8 +1069,11 @@ int main()
 			player.y=HEIGHT/2+SCALE/2+150;
 			blinky=initialiseblinky();
 			inky=initialiseinky();
+			inky.timetostart=SDL_GetTicks()+15000;
 			pinky=initialisepinky();
+			pinky.timetostart=SDL_GetTicks()+5000;
 			clyde=initialiseclyde();
+			clyde.timetostart=SDL_GetTicks()+10000;
 			SDL_Delay(1500);
 		}
 
@@ -1054,8 +1090,11 @@ int main()
 			player.y=HEIGHT/2+SCALE/2+150;
 			blinky=initialiseblinky();
 			inky=initialiseinky();
+			inky.timetostart=SDL_GetTicks()+15000;
 			pinky=initialisepinky();
+			pinky.timetostart=SDL_GetTicks()+5000;
 			clyde=initialiseclyde();
+			clyde.timetostart=SDL_GetTicks()+10000;
 		}
 
 		//the following is responsible for the animation of Pac Man
