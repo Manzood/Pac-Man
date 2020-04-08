@@ -1,5 +1,5 @@
 #OBJS specif.ies which files to compile as part of the project
-OBJS = Pac-Man-v2.c
+OBJS = Pac-Man-v1.c
 
 #OBJ_NAME specifies the name of our exectuable
 OBJ_NAME = PacMan

@@ -19,13 +19,11 @@
 #define DIRECTIONLEFT -2
 
 /*itenerary :
-3)Adding enemies (inky,pinky and Clyde haven't been added yet)
 4)Enemy AI is a must, with different levels of difficulty (random AI has been added)
 6)Cherries! //Might never happen, honestly
 7)Multiple lives, level resets whem all the cherries are collected, score
 8)Large pellets make enemies go insane, their directions must be decided by changedirection, also, an animation for eating the enemy (or at least screen slowdown) is a must
-9)Display lives
-10)Loading screen (yikes)
+10)Loading screen
 11)Game over screen, screen between lives, screen between levels
 12)Perhaps the screen between lives and the screen between levels would be the same
 */
@@ -42,6 +40,9 @@ int previoustoggle=0;
 int score=0;
 int pelletcount=0;
 SDL_Color White = {255, 255, 255};
+SDL_Color Red = {255,0,0};
+SDL_Color Yellow = {255,255,0};
+int lives=3;
 
 //So these three variables determine the logic behind which direction Pac-Man will turn
 //In the original game, the direction you entered was saved so that the second you hit a dead end Pac-Man would change direction
@@ -859,6 +860,62 @@ void displayscoreboard(TTF_Font* Sans,SDL_Renderer *renderer)
 	SDL_FreeSurface(messagesurface);
 }
 
+void displaylives (SDL_Renderer *renderer,SDL_Texture *lives1Texture,SDL_Rect lives1,SDL_Texture *lives2Texture,SDL_Rect lives2,SDL_Texture *lives3Texture,SDL_Rect lives3) 
+{
+	if (lives>0)
+	{
+		SDL_RenderCopy(renderer,lives1Texture,NULL,&lives1);
+	}
+	if (lives>1)
+	{
+		SDL_RenderCopy(renderer,lives2Texture,NULL,&lives2);
+	}
+	if (lives>2)
+	{
+		SDL_RenderCopy(renderer,lives3Texture,NULL,&lives3);
+	}
+
+}
+
+void endingscreen(TTF_Font* Sans,SDL_Renderer *renderer)
+{
+	SDL_SetRenderDrawColor(renderer,0,0,0,0);
+	SDL_RenderClear(renderer);
+
+	SDL_Surface* messagesurface = TTF_RenderText_Solid(Sans,"GAME OVER",Yellow);
+	SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer,messagesurface);
+	SDL_Rect messagerect;
+	messagerect.x=WIDTH/2-125	;
+	messagerect.y=HEIGHT/2-100;
+	messagerect.h=60;
+	messagerect.w=250;
+
+	char scorestr[10];
+	sprintf(scorestr,"Score:%d",score);
+	SDL_Surface* scoresurface = TTF_RenderText_Solid(Sans,scorestr,White);
+	SDL_Texture* Score = SDL_CreateTextureFromSurface(renderer,scoresurface);
+	SDL_Rect scorerect;
+	scorerect.x=WIDTH/2-75;
+	scorerect.y=HEIGHT/2;
+	scorerect.h=40;
+	scorerect.w=150;
+
+	SDL_RenderCopy(renderer,Message,NULL,&messagerect);
+	SDL_RenderCopy(renderer,Score,NULL,&scorerect);
+
+	SDL_RenderPresent(renderer);
+
+	SDL_Event event;
+
+	while (1)
+		if (SDL_PollEvent(&event))
+		{
+			//checking if the user decides to click on the quit button
+			if (SDL_QUIT == event.type)
+				return 0;
+		}
+}
+
 
 
 
@@ -969,8 +1026,45 @@ int main()
 	messagerect.h=24;
 	messagerect.w=70;
 
+	SDL_Surface* livessurface = TTF_RenderText_Solid(font,"Lives:",White);
+	SDL_Texture* LivesTexture = SDL_CreateTextureFromSurface(renderer,livessurface);
+	SDL_Rect livesrect;
+	livesrect.x=WIDTH-180;
+	livesrect.y=3;
+	livesrect.h=24;
+	livesrect.w=60;
+
+	SDL_Surface *lives1surface=IMG_Load("PacManMid-right.png");
+	SDL_Texture *lives1Texture = SDL_CreateTextureFromSurface(renderer,lives1surface);
+	SDL_Rect lives1;
+	SDL_QueryTexture(lives1Texture,NULL,NULL,&lives1.w,&lives1.h);
+	lives1.w=SCALE-5;
+	lives1.h=SCALE-5;
+	lives1.x=WIDTH-108;
+	lives1.y=2;
+
+	SDL_Surface *lives2surface=IMG_Load("PacManMid-right.png");
+	SDL_Texture *lives2Texture = SDL_CreateTextureFromSurface(renderer,lives2surface);
+	SDL_Rect lives2;
+	SDL_QueryTexture(lives2Texture,NULL,NULL,&lives2.w,&lives2.h);
+	lives2.w=SCALE-5;
+	lives2.h=SCALE-5;
+	lives2.x=WIDTH-71;
+	lives2.y=2;
+
+	SDL_Surface *lives3surface=IMG_Load("PacManMid-right.png");
+	SDL_Texture *lives3Texture = SDL_CreateTextureFromSurface(renderer,lives3surface);
+	SDL_Rect lives3;
+	SDL_QueryTexture(lives3Texture,NULL,NULL,&lives3.w,&lives3.h);
+	lives3.w=SCALE-5;
+	lives3.h=SCALE-5;
+	lives3.x=WIDTH-34;
+	lives3.y=2;
+
 	SDL_RenderCopy(renderer,Message,NULL,&messagerect);
+	SDL_RenderCopy(renderer,LivesTexture,NULL,&livesrect);
 	SDL_FreeSurface(messagesurface);
+	SDL_FreeSurface(livessurface);
 
 	//Checks for errors in initialisation and creation of the window, the background, and the image for PacMan itself and prints the error
 	if (window == NULL)
@@ -1011,8 +1105,15 @@ int main()
 		if (SDL_PollEvent(&event))
 		{
 			//checking if the user decides to click on the quit button
-			if (SDL_QUIT == event.type)
+			if (SDL_QUIT == event.type) 
+			{
 				playing=0;
+				SDL_FreeSurface(messagesurface);
+				SDL_FreeSurface(livessurface);
+				SDL_DestroyWindow(window);
+				SDL_Quit;
+				return 0;
+			}
 			else if (event.type == SDL_KEYDOWN)
 			{
 				code=event.key.keysym.sym;
@@ -1043,7 +1144,7 @@ int main()
 
 		if (checkcollisionwithenemy(blinky,player)||checkcollisionwithenemy(inky,player)||checkcollisionwithenemy(clyde,player)||checkcollisionwithenemy(pinky,player))
 		{
-			SDL_Delay(1500);
+			SDL_Delay(1200);
 			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 			SDL_RenderClear(renderer);
 			//calculateinitialpellets();
@@ -1056,6 +1157,11 @@ int main()
 			inky=initialiseinky();
 			pinky=initialisepinky();
 			clyde=initialiseclyde();
+			lives--;
+			if (lives==0)
+			{
+				playing=0;
+			}
 		}
 
 		//the following is responsible for the animation of Pac Man
@@ -1113,6 +1219,8 @@ int main()
 		else
 		{
 			SDL_RenderCopy(renderer,Message,NULL,&messagerect);
+			SDL_RenderCopy(renderer,LivesTexture,NULL,&livesrect);
+			displaylives(renderer,lives1Texture,lives1,lives2Texture,lives2,lives3Texture,lives3);
 			displayscoreboard(font,renderer);
 		}
 		//drawrectangle(renderer, blinky.x, blinky.y, SCALE, SCALE);
@@ -1122,7 +1230,10 @@ int main()
 		SDL_Delay(1000 / FPS);
 	}
 
+	endingscreen(font,renderer);
+
 	SDL_FreeSurface(messagesurface);
+	SDL_FreeSurface(livessurface);
 	SDL_DestroyWindow(window);
 	SDL_Quit;
 
