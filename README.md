@@ -1,4 +1,4 @@
-#Pac-Man
+<h1> Pac-Man </h1> <br>
 Can be run using the executable file provided.
 However, this executable file had been built on a linux Ubuntu distribution, so compatibility with your system will vary.
 Compilation in C can be done if the SDL2 library is installed, which can bewith further ease using the Makefile provided.
