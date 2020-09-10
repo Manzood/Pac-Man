@@ -3,6 +3,7 @@ Can be run using the executable file provided.
 However, this executable file had been built on a linux Ubuntu distribution, so compatibility with your system will vary.
 Compilation in C can be done if the SDL2 library is installed, which can bewith further ease using the Makefile provided.
 The remaining assets, used or unused, are also provided in this repository.
+You should be able to build it on another system with the SDL2 and TTF libraries installed.
 
 There are various tutorials for installing SDL2 on your computer, which will be required to run the code in this project
 The main website for SDL2 is linked here: 
