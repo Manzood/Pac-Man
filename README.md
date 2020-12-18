@@ -16,8 +16,15 @@ The images used in this project were found from various sources on the internet,
 
 SDL_ttf is a library that I had insttalled on linux using the command: "sudo apt-get install libsdl2-ttf.dev"
 That's all that was required on linux
-For Windows users, they seem to have a lot more detailed and simplified instructions on the main SDL-ttf website:
+
+For Windows users, they seem to have a much better instructions on the main SDL-ttf website:
   https://www.libsdl.org/projects/SDL_ttf/
 Also, a tutorial on SDL_ttf can be found here: 
   http://gigi.nullneuron.net/gigilabs/displaying-text-in-sdl2-with-sdl_ttf/
 
+Command to install the SDL2_image library:
+    ```sudo apt-get install libsdl-image1.2-dev```
+
+Update:
+    SDL2 seems to have been updated since this project was made, so it may not work with an install of the latest binaries.
+    In the future, I might port it and make sure everything works, but at the moment, the project will not commpile

@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<SDL2/SDL.h>
-#include<SDL2/SDL_image.h>
+/* #include<SDL2/SDL_image.h> */
+#include<SDL/SDL_image.h>>
 #include<SDL2/SDL_timer.h>
 #include<SDL2/SDL_ttf.h>
 #include<stdbool.h>
@@ -915,11 +916,6 @@ void endingscreen(TTF_Font* Sans,SDL_Renderer *renderer)
 				return 0;
 		}
 }
-
-
-
-
-
 
 int main()
 {

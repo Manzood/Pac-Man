@@ -1,11 +1,11 @@
-#include<stdio.h>
-#include<SDL2/SDL.h>
-#include<SDL2/SDL_image.h>
-#include<SDL2/SDL_timer.h>
-#include<SDL2/SDL_ttf.h>
-#include<stdbool.h>
-#include<math.h>
-#include<time.h>
+#include <stdio.h>
+#include <SDL2/SDL.h>
+#include <SDL/SDL_image.h>
+#include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_ttf.h>
+#include <stdbool.h>
+#include <math.h>
+#include <time.h>
 
 #define WIDTH 570
 #define HEIGHT 630
@@ -35,12 +35,12 @@
 //int xpos=WIDTH/2, ypos=HEIGHT/2, xspeed=10, yspeed=10;
 
 int FPS = 110;
-bool up=false, down=false, left=false, right=false;
+bool up = false, down = false, left = false, right = false;
 char *pacmanimage = "PacManOpen-right.png";
-int imagetoggle=0; //0=closed,1=mid-range open mouth and 2=fully open mouth
-int previoustoggle=0;
-int score=0;
-int pelletcount=0;
+int imagetoggle = 0; //0=closed,1=mid-range open mouth and 2=fully open mouth
+int previoustoggle = 0;
+int score = 0;
+int pelletcount = 0;
 SDL_Color White = {255, 255, 255};
 
 //So these three variables determine the logic behind which direction Pac-Man will turn
@@ -52,12 +52,12 @@ SDL_Color White = {255, 255, 255};
 //Otherwise, direction changes only after Pac-Man encounters a dead end
 //the third variable, "s.teleporting", checks if pac man is, in fact, s.teleporting, and therefore prompts the behaviour in that situation
 
-int direction=0;
-int nextdirection=0;
-int blinkydirection=DIRECTIONLEFT;
-int nextblinkydirection=0;
-int level=1;
-int highscore=0;
+int direction = 0;
+int nextdirection = 0;
+int blinkydirection = DIRECTIONLEFT;
+int nextblinkydirection = 0;
+int level = 1;
+int highscore = 0;
 
 struct sprite
 {
@@ -82,40 +82,39 @@ struct enemysprite
 };
 
 //zero is stop... one is go. Also, the zero in the 8th line (second line above halfway point) should be coloured orange
-int grid[21][19]={
-	{0,0,0,0,0,0,0,0,0, 0 ,0,0,0,0,0,0,0,0,0},
-	{0,1,1,1,1,1,1,1,1, 0 ,1,1,1,1,1,1,1,1,0},
-	{0,1,0,0,1,0,0,0,1, 0 ,1,0,0,0,1,0,0,1,0},
-	{0,1,1,1,1,1,1,1,1, 1 ,1,1,1,1,1,1,1,1,0},
-	{0,1,0,0,1,0,1,0,0, 0 ,0,0,1,0,1,0,0,1,0},
-	{0,1,1,1,1,0,1,1,1, 0 ,1,1,1,0,1,1,1,1,0},
-	{0,0,0,0,1,0,0,0,1, 0 ,1,0,0,0,1,0,0,0,0},
-	{1,1,1,0,1,0,1,1,1, 1 ,1,1,1,0,1,0,1,1,1},
-	{0,0,0,0,1,0,1,0,0, 0 ,0,0,1,0,1,0,0,0,0},
-	{1,1,1,1,1,1,1,0,1, 1 ,1,0,1,1,1,1,1,1,1},
-	
-	{0,0,0,0,1,0,1,0,0, 0 ,0,0,1,0,1,0,0,0,0},
+int grid[21][19] = {
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+	{0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0},
+	{0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+	{0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0},
+	{0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0},
+	{0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0},
+	{1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1},
+	{0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0},
+	{1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1},
 
-	{1,1,1,0,1,0,1,1,1, 1 ,1,1,1,0,1,0,1,1,1},
-	{0,0,0,0,1,0,1,0,0, 0 ,0,0,1,0,1,0,0,0,0},
-	{0,1,1,1,1,1,1,1,1, 0 ,1,1,1,1,1,1,1,1,0},
-	{0,1,0,0,1,0,0,0,1, 0 ,1,0,0,0,1,0,0,1,0},
-	{0,1,1,0,1,1,1,1,1, 1 ,1,1,1,1,1,0,1,1,0},
-	{0,0,1,0,1,0,1,0,0, 0 ,0,0,1,0,1,0,1,0,0},
-	{0,1,1,1,1,0,1,1,1, 0 ,1,1,1,0,1,1,1,1,0},
-	{0,1,0,0,0,0,0,0,1, 0 ,1,0,0,0,0,0,0,1,0},
-	{0,1,1,1,1,1,1,1,1, 1 ,1,1,1,1,1,1,1,1,0},
-	{0,0,0,0,0,0,0,0,0, 0 ,0,0,0,0,0,0,0,0,0}
-};
+	{0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0},
+
+	{1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1},
+	{0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0},
+	{0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+	{0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0},
+	{0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0},
+	{0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0},
+	{0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0},
+	{0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0},
+	{0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 
 int pellets[42][38];
 
 //basic initialisation function for SDL
 int init()
 {
-	if (SDL_Init(SDL_INIT_EVERYTHING)!=0)
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 		printf("Error initialising SDL = %s\n", SDL_GetError());
-	if (SCALE%SPEED!=0)
+	if (SCALE % SPEED != 0)
 	{
 		printf("Sorry, the speed is not a factor of the scale of each box in the grid, which means the game will not work.\n. Please make the speed a factor of the scale, and try again.\n");
 		return -1;
@@ -123,7 +122,7 @@ int init()
 }
 
 //Can be called to toggle fullscreen mode at any time
-void togglefullscreen(SDL_Window* window)
+void togglefullscreen(SDL_Window *window)
 {
 	Uint32 FullScreen = SDL_WINDOW_FULLSCREEN;
 	int status = SDL_GetWindowFlags(window);
@@ -133,26 +132,25 @@ void togglefullscreen(SDL_Window* window)
 		SDL_SetWindowFullscreen(window, FullScreen);
 }
 
-void updatescreen(SDL_Renderer* renderer, SDL_Texture *backgroundtexture, SDL_Texture *PacMan, SDL_Rect *pacman,SDL_Rect *bg)
+void updatescreen(SDL_Renderer *renderer, SDL_Texture *backgroundtexture, SDL_Texture *PacMan, SDL_Rect *pacman, SDL_Rect *bg)
 {
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-	SDL_RenderCopy(renderer,backgroundtexture,NULL,bg);
-	SDL_RenderCopy(renderer,PacMan,NULL,pacman);
+	SDL_RenderCopy(renderer, backgroundtexture, NULL, bg);
+	SDL_RenderCopy(renderer, PacMan, NULL, pacman);
 }
 
 //function to make drawing multiple rectangles in one page easier: mimics the functions to draw rectangles in pygame
-void drawrectangle(SDL_Renderer* renderer, int x, int y, int w, int h)
+void drawrectangle(SDL_Renderer *renderer, int x, int y, int w, int h)
 {
 	SDL_Rect rect;
-	rect.x=x;
-	rect.y=y;
-	rect.w=w;
-	rect.h=h;
+	rect.x = x;
+	rect.y = y;
+	rect.w = w;
+	rect.h = h;
 
 	SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
 	SDL_RenderDrawRect(renderer, &rect);
 }
-
 
 //initialises all the four enemies, and sets their starting positions
 //Although a function was not necessarily needed for this, it makes the main function look
@@ -161,219 +159,219 @@ void drawrectangle(SDL_Renderer* renderer, int x, int y, int w, int h)
 struct enemysprite initialiseblinky()
 {
 	struct enemysprite blinky;
-	blinky.x=WIDTH/2-15;
-	blinky.y=HEIGHT/2-75;
-	blinky.xspeed=SPEED-1;
-	blinky.yspeed=SPEED-1;
-	blinky.teleporting=false;
-	blinky.direction=DIRECTIONLEFT;
-	blinky.ndirection=0;
-	blinky.startmoves=0;
-	blinky.timetostart=0;
+	blinky.x = WIDTH / 2 - 15;
+	blinky.y = HEIGHT / 2 - 75;
+	blinky.xspeed = SPEED - 1;
+	blinky.yspeed = SPEED - 1;
+	blinky.teleporting = false;
+	blinky.direction = DIRECTIONLEFT;
+	blinky.ndirection = 0;
+	blinky.startmoves = 0;
+	blinky.timetostart = 0;
 	return blinky;
 }
 
-struct enemysprite initialisepinky () 
+struct enemysprite initialisepinky()
 {
 	struct enemysprite pinky;
-	pinky.x=WIDTH/2-15;
-	pinky.y=HEIGHT/2-15;
-	pinky.xspeed=SPEED-1;
-	pinky.yspeed=SPEED-1;
-	pinky.teleporting=false;
-	pinky.direction=0;
-	pinky.ndirection=0;
-	pinky.startmoves=4;
-	pinky.timetostart=10000;
+	pinky.x = WIDTH / 2 - 15;
+	pinky.y = HEIGHT / 2 - 15;
+	pinky.xspeed = SPEED - 1;
+	pinky.yspeed = SPEED - 1;
+	pinky.teleporting = false;
+	pinky.direction = 0;
+	pinky.ndirection = 0;
+	pinky.startmoves = 4;
+	pinky.timetostart = 10000;
 	return pinky;
 }
 
-struct enemysprite initialiseclyde () 
+struct enemysprite initialiseclyde()
 {
 	struct enemysprite clyde;
-	clyde.x=WIDTH/2-45;
-	clyde.y=HEIGHT/2-15;
-	clyde.xspeed=SPEED-1;
-	clyde.yspeed=SPEED-1;
-	clyde.teleporting=false;
-	clyde.direction=0;
-	clyde.ndirection=0;
-	clyde.startmoves=3;
-	clyde.timetostart=5000;
+	clyde.x = WIDTH / 2 - 45;
+	clyde.y = HEIGHT / 2 - 15;
+	clyde.xspeed = SPEED - 1;
+	clyde.yspeed = SPEED - 1;
+	clyde.teleporting = false;
+	clyde.direction = 0;
+	clyde.ndirection = 0;
+	clyde.startmoves = 3;
+	clyde.timetostart = 5000;
 	return clyde;
 }
 
-struct enemysprite initialiseinky ()
+struct enemysprite initialiseinky()
 {
 	struct enemysprite inky;
-	inky.x=WIDTH/2+15;
-	inky.y=HEIGHT/2-15;
-	inky.xspeed=SPEED-1;
-	inky.yspeed=SPEED-1;
-	inky.teleporting=false;
-	inky.direction=0;
-	inky.ndirection=0;
-	inky.startmoves=-4;
-	inky.timetostart=15000;
+	inky.x = WIDTH / 2 + 15;
+	inky.y = HEIGHT / 2 - 15;
+	inky.xspeed = SPEED - 1;
+	inky.yspeed = SPEED - 1;
+	inky.teleporting = false;
+	inky.direction = 0;
+	inky.ndirection = 0;
+	inky.startmoves = -4;
+	inky.timetostart = 15000;
 	return inky;
 }
 
 //function that controls the movement of pacman, and maybe the ghosts as well (it can be pretty generalized)
 //my coup de grace, pretty much
-struct sprite move (struct sprite s) 
+struct sprite move(struct sprite s)
 {
-	int gridx=s.x/30;
-	int gridy=(s.y-30)/30;
+	int gridx = s.x / 30;
+	int gridy = (s.y - 30) / 30;
 	//printf("%d %d\n",gridy,gridx);
-	
+
 	//the code that stores the next click of the user, and thereby allows them to change direction preemptively
-	if (direction+nextdirection==0)
+	if (direction + nextdirection == 0)
 	{
-		direction=nextdirection;
+		direction = nextdirection;
 	}
 	else
 	{
-		if (nextdirection==DIRECTIONUP||nextdirection==DIRECTIONDOWN)
+		if (nextdirection == DIRECTIONUP || nextdirection == DIRECTIONDOWN)
 		{
-			if (nextdirection==DIRECTIONUP)
+			if (nextdirection == DIRECTIONUP)
 			{
-				if (s.x%30==0 && !(gridy==9&&(gridx<4||gridx>14)))
+				if (s.x % 30 == 0 && !(gridy == 9 && (gridx < 4 || gridx > 14)))
 				{
-					if(grid[gridy-1][gridx]==1)
-						direction=nextdirection;
+					if (grid[gridy - 1][gridx] == 1)
+						direction = nextdirection;
 				}
 			}
 			else
 			{
-				if (s.x%30==0 && !(gridy==9&&(gridx<4||gridx>14)))
-					if (grid[gridy+1][gridx]==1)
-						direction=nextdirection;
+				if (s.x % 30 == 0 && !(gridy == 9 && (gridx < 4 || gridx > 14)))
+					if (grid[gridy + 1][gridx] == 1)
+						direction = nextdirection;
 			}
 		}
-		else if (nextdirection==DIRECTIONLEFT||nextdirection==DIRECTIONRIGHT)
+		else if (nextdirection == DIRECTIONLEFT || nextdirection == DIRECTIONRIGHT)
 		{
-			if (nextdirection==DIRECTIONLEFT)
+			if (nextdirection == DIRECTIONLEFT)
 			{
-				if (s.y%30==0)
+				if (s.y % 30 == 0)
 				{
-					if (grid[gridy][gridx-1]==1)
-						direction=nextdirection;
+					if (grid[gridy][gridx - 1] == 1)
+						direction = nextdirection;
 				}
 			}
 			else
 			{
-				if (s.y%30==0)
+				if (s.y % 30 == 0)
 				{
-					if (grid[gridy][gridx+1]==1)
-						direction=nextdirection;
+					if (grid[gridy][gridx + 1] == 1)
+						direction = nextdirection;
 				}
 			}
 		}
 	}
 
 	//the actual movement happens here
-	if (direction==DIRECTIONUP)
+	if (direction == DIRECTIONUP)
 	{
-		if (grid[gridy][gridx]==1 && s.y%30>=s.yspeed)
+		if (grid[gridy][gridx] == 1 && s.y % 30 >= s.yspeed)
 		{
-			s.y-=s.yspeed;
+			s.y -= s.yspeed;
 		}
-		else if (grid[gridy][gridx]==1 && s.y%30>0)
+		else if (grid[gridy][gridx] == 1 && s.y % 30 > 0)
 		{
-			s.y-=s.y%30;
+			s.y -= s.y % 30;
 		}
 		else
 		{
-			if (grid[gridy-1][gridx]==0)
-				direction=nextdirection;
+			if (grid[gridy - 1][gridx] == 0)
+				direction = nextdirection;
 			else
-				s.y-=s.yspeed;
+				s.y -= s.yspeed;
 		}
 	}
-	if (direction==DIRECTIONLEFT)
+	if (direction == DIRECTIONLEFT)
 	{
-		if (s.teleporting==false)
+		if (s.teleporting == false)
 		{
-			if (grid[gridy][gridx]==1 && s.x%30>=s.xspeed)
+			if (grid[gridy][gridx] == 1 && s.x % 30 >= s.xspeed)
 			{
-				s.x-=s.xspeed;
+				s.x -= s.xspeed;
 			}
-			else if (grid[gridy][gridx]==1 && s.x%30>0)
+			else if (grid[gridy][gridx] == 1 && s.x % 30 > 0)
 			{
-				s.x-=s.x%30;
+				s.x -= s.x % 30;
 			}
 			else
 			{
-				if (gridx==0)
+				if (gridx == 0)
 				{
-					s.teleporting=true;
+					s.teleporting = true;
 				}
-				else if (grid[gridy][gridx-1]==0)
-					direction=nextdirection;
+				else if (grid[gridy][gridx - 1] == 0)
+					direction = nextdirection;
 				else
-					s.x-=s.xspeed;
+					s.x -= s.xspeed;
 			}
 		}
 		else
 		{
-			if(s.x==-30)
+			if (s.x == -30)
 			{
-				s.x=WIDTH;
-				s.teleporting=false;
+				s.x = WIDTH;
+				s.teleporting = false;
 			}
 			else
-				s.x-=s.xspeed;
+				s.x -= s.xspeed;
 		}
 	}
-	if (direction==DIRECTIONRIGHT)
+	if (direction == DIRECTIONRIGHT)
 	{
-		if (s.teleporting==false) 
+		if (s.teleporting == false)
 		{
-			if (grid[gridy][gridx+1]==1 && s.x%30+s.xspeed<=30)
+			if (grid[gridy][gridx + 1] == 1 && s.x % 30 + s.xspeed <= 30)
 			{
-				s.x+=s.xspeed;
+				s.x += s.xspeed;
 			}
-			else if (grid[gridy][gridx+1]==1 && s.x%30+s.xspeed>30)
+			else if (grid[gridy][gridx + 1] == 1 && s.x % 30 + s.xspeed > 30)
 			{
-				s.x+=30-s.x%30;
+				s.x += 30 - s.x % 30;
 			}
 			else
 			{
-				if (gridx==18||gridx==19)
-					s.teleporting=true;
-				else if (grid[gridy][gridx+1]==0)
-					direction=nextdirection;
+				if (gridx == 18 || gridx == 19)
+					s.teleporting = true;
+				else if (grid[gridy][gridx + 1] == 0)
+					direction = nextdirection;
 				else
-				 	s.x+=s.xspeed;
+					s.x += s.xspeed;
 			}
 		}
 		else
 		{
-			if (s.x==WIDTH+30)
+			if (s.x == WIDTH + 30)
 			{
-				s.x=-30;
-				s.teleporting=false;
+				s.x = -30;
+				s.teleporting = false;
 			}
 			else
-				s.x+=s.xspeed;
+				s.x += s.xspeed;
 		}
 	}
-	if (direction==DIRECTIONDOWN)
+	if (direction == DIRECTIONDOWN)
 	{
-		if (grid[gridy+1][gridx]==1 && s.y%30+s.yspeed<=30)
+		if (grid[gridy + 1][gridx] == 1 && s.y % 30 + s.yspeed <= 30)
 		{
-			s.y+=s.yspeed;
+			s.y += s.yspeed;
 		}
-		else if (grid[gridy+1][gridx]==1 && s.y%30+s.yspeed>30)
+		else if (grid[gridy + 1][gridx] == 1 && s.y % 30 + s.yspeed > 30)
 		{
-			s.y+=30-s.y%30;
+			s.y += 30 - s.y % 30;
 		}
 		else
 		{
-			if (grid[gridy+1][gridx]==0)
-				direction=nextdirection;
+			if (grid[gridy + 1][gridx] == 0)
+				direction = nextdirection;
 			else
-				s.y+=s.yspeed;
+				s.y += s.yspeed;
 		}
 	}
 	return s;
@@ -381,53 +379,53 @@ struct sprite move (struct sprite s)
 
 int choosedirectionforenemy()
 {
-	int randomnumbergenerated=rand()%3;
-	while (randomnumbergenerated==0)
+	int randomnumbergenerated = rand() % 3;
+	while (randomnumbergenerated == 0)
 	{
-		randomnumbergenerated=(rand()%2)+1;
+		randomnumbergenerated = (rand() % 2) + 1;
 	}
-	int multiplier=rand()%2;
+	int multiplier = rand() % 2;
 	if (multiplier)
 		return randomnumbergenerated;
 	else
-		return randomnumbergenerated*(-1);
+		return randomnumbergenerated * (-1);
 }
 
-struct enemysprite moveenemy (struct enemysprite enemy)
+struct enemysprite moveenemy(struct enemysprite enemy)
 {
-	int gridx=enemy.x/30;
-	int gridy=(enemy.y-30)/30;
-	grid[8][9]=1;
-	int enemydirection=enemy.direction;
-	int nextenemydirection=enemy.ndirection;
-	unsigned int enemytime=SDL_GetTicks();
+	int gridx = enemy.x / 30;
+	int gridy = (enemy.y - 30) / 30;
+	grid[8][9] = 1;
+	int enemydirection = enemy.direction;
+	int nextenemydirection = enemy.ndirection;
+	unsigned int enemytime = SDL_GetTicks();
 
-	if ((enemydirection==nextenemydirection || nextenemydirection==0))
+	if ((enemydirection == nextenemydirection || nextenemydirection == 0))
 	{
-		if (enemytime>enemy.timetostart) 
+		if (enemytime > enemy.timetostart)
 		{
-			nextenemydirection=choosedirectionforenemy();
-			if (enemy.startmoves>0) 
+			nextenemydirection = choosedirectionforenemy();
+			if (enemy.startmoves > 0)
 			{
-				if (enemy.startmoves==4) 
-					nextenemydirection=DIRECTIONRIGHT;
-				else if (enemy.startmoves==3)
-					nextenemydirection=DIRECTIONUP;
-				else if (enemy.startmoves==2) 
-					nextenemydirection=DIRECTIONUP;
-				else if (enemy.startmoves==1)
+				if (enemy.startmoves == 4)
+					nextenemydirection = DIRECTIONRIGHT;
+				else if (enemy.startmoves == 3)
+					nextenemydirection = DIRECTIONUP;
+				else if (enemy.startmoves == 2)
+					nextenemydirection = DIRECTIONUP;
+				else if (enemy.startmoves == 1)
 				{
-					if (enemytime>5000 && enemytime<10000) 
-						nextenemydirection=DIRECTIONRIGHT;
-					else if (enemytime>10000 && enemytime<15000) 
-						nextenemydirection=DIRECTIONLEFT;
-					else 
-						nextenemydirection=DIRECTIONRIGHT;
+					if (enemytime > 5000 && enemytime < 10000)
+						nextenemydirection = DIRECTIONRIGHT;
+					else if (enemytime > 10000 && enemytime < 15000)
+						nextenemydirection = DIRECTIONLEFT;
+					else
+						nextenemydirection = DIRECTIONRIGHT;
 				}
-				else if (enemy.startmoves==-4) 
+				else if (enemy.startmoves == -4)
 				{
-					nextenemydirection=DIRECTIONLEFT;
-					enemy.startmoves=4;
+					nextenemydirection = DIRECTIONLEFT;
+					enemy.startmoves = 4;
 				}
 				enemy.startmoves--;
 			}
@@ -435,171 +433,172 @@ struct enemysprite moveenemy (struct enemysprite enemy)
 	}
 	//following is untested as of yet
 
-	if (nextenemydirection==DIRECTIONUP||nextenemydirection==DIRECTIONDOWN)
+	if (nextenemydirection == DIRECTIONUP || nextenemydirection == DIRECTIONDOWN)
 	{
-		if (nextenemydirection==DIRECTIONUP)
+		if (nextenemydirection == DIRECTIONUP)
 		{
-			if (enemy.x%30==0 && !(gridy==9&&(gridx<4||gridx>14)))
+			if (enemy.x % 30 == 0 && !(gridy == 9 && (gridx < 4 || gridx > 14)))
 			{
-				if(grid[gridy-1][gridx]==1)
-					enemydirection=nextenemydirection;
+				if (grid[gridy - 1][gridx] == 1)
+					enemydirection = nextenemydirection;
 			}
 		}
 		else
 		{
-			if (enemy.x%30==0 && !(gridy==9&&(gridx<4||gridx>14)))
-				if (grid[gridy+1][gridx]==1)
-					enemydirection=nextenemydirection;
+			if (enemy.x % 30 == 0 && !(gridy == 9 && (gridx < 4 || gridx > 14)))
+				if (grid[gridy + 1][gridx] == 1)
+					enemydirection = nextenemydirection;
 		}
 	}
-	else if (nextenemydirection==DIRECTIONLEFT||nextenemydirection==DIRECTIONRIGHT)
+	else if (nextenemydirection == DIRECTIONLEFT || nextenemydirection == DIRECTIONRIGHT)
 	{
-		if (nextenemydirection==DIRECTIONLEFT)
+		if (nextenemydirection == DIRECTIONLEFT)
 		{
-			if (enemy.y%30==0)
+			if (enemy.y % 30 == 0)
 			{
-				if (grid[gridy][gridx-1]==1)
-					enemydirection=nextenemydirection;
+				if (grid[gridy][gridx - 1] == 1)
+					enemydirection = nextenemydirection;
 			}
 		}
 		else
 		{
-			if (enemy.y%30==0)
+			if (enemy.y % 30 == 0)
 			{
-				if (grid[gridy][gridx+1]==1)
-					enemydirection=nextenemydirection;
+				if (grid[gridy][gridx + 1] == 1)
+					enemydirection = nextenemydirection;
 			}
 		}
 	}
 
 	//works beyond this point
 
-	if (enemydirection==0) 
+	if (enemydirection == 0)
 	{
-		if (nextenemydirection!=0)
+		if (nextenemydirection != 0)
 		{
-			enemydirection=nextenemydirection;
+			enemydirection = nextenemydirection;
 		}
 	}
 
-	if (enemydirection==DIRECTIONUP)
+	if (enemydirection == DIRECTIONUP)
 	{
-		if (grid[gridy][gridx]==1 && enemy.y%30>=enemy.yspeed)
+		if (grid[gridy][gridx] == 1 && enemy.y % 30 >= enemy.yspeed)
 		{
-			enemy.y-=enemy.yspeed;
+			enemy.y -= enemy.yspeed;
 		}
-		else if (grid[gridy][gridx]==1 && enemy.y%30>0)
+		else if (grid[gridy][gridx] == 1 && enemy.y % 30 > 0)
 		{
-			enemy.y-=enemy.y%30;
+			enemy.y -= enemy.y % 30;
 		}
 		else
 		{
-			if (grid[gridy-1][gridx]==0) {
-				enemydirection=nextenemydirection;
+			if (grid[gridy - 1][gridx] == 0)
+			{
+				enemydirection = nextenemydirection;
 			}
 			else
-				enemy.y-=enemy.yspeed;
+				enemy.y -= enemy.yspeed;
 		}
 	}
-	if (enemydirection==DIRECTIONLEFT)
+	if (enemydirection == DIRECTIONLEFT)
 	{
-		if (enemy.teleporting==false)
+		if (enemy.teleporting == false)
 		{
-			if (grid[gridy][gridx]==1 && enemy.x%30>=enemy.xspeed)
+			if (grid[gridy][gridx] == 1 && enemy.x % 30 >= enemy.xspeed)
 			{
-				enemy.x-=enemy.xspeed;
+				enemy.x -= enemy.xspeed;
 			}
-			else if (grid[gridy][gridx]==1 && enemy.x%30>0)
+			else if (grid[gridy][gridx] == 1 && enemy.x % 30 > 0)
 			{
-				enemy.x-=enemy.x%30;
+				enemy.x -= enemy.x % 30;
 			}
 			else
 			{
-				if (gridx==0)
+				if (gridx == 0)
 				{
-					enemy.teleporting=true;
+					enemy.teleporting = true;
 				}
-				else if (grid[gridy][gridx-1]==0)
-					enemydirection=nextenemydirection;
+				else if (grid[gridy][gridx - 1] == 0)
+					enemydirection = nextenemydirection;
 				else
-					enemy.x-=enemy.xspeed;
+					enemy.x -= enemy.xspeed;
 			}
 		}
 		else
 		{
-			if(enemy.x==-30)
+			if (enemy.x == -30)
 			{
-				enemy.x=WIDTH;
-				enemy.teleporting=false;
+				enemy.x = WIDTH;
+				enemy.teleporting = false;
 			}
 			else
-				enemy.x-=enemy.xspeed;
+				enemy.x -= enemy.xspeed;
 		}
 	}
-	if (enemydirection==DIRECTIONRIGHT)
+	if (enemydirection == DIRECTIONRIGHT)
 	{
-		if (enemy.teleporting==false) 
+		if (enemy.teleporting == false)
 		{
-			if (grid[gridy][gridx+1]==1 && enemy.x%30+enemy.xspeed<=30)
+			if (grid[gridy][gridx + 1] == 1 && enemy.x % 30 + enemy.xspeed <= 30)
 			{
-				enemy.x+=enemy.xspeed;
+				enemy.x += enemy.xspeed;
 			}
-			else if (grid[gridy][gridx+1]==1 && enemy.x%30+enemy.xspeed>30)
+			else if (grid[gridy][gridx + 1] == 1 && enemy.x % 30 + enemy.xspeed > 30)
 			{
-				enemy.x+=30-enemy.x%30;
+				enemy.x += 30 - enemy.x % 30;
 			}
 			else
 			{
-				if (gridx==18||gridx==19)
-					enemy.teleporting=true;
-				else if (grid[gridy][gridx+1]==0)
-					enemydirection=nextenemydirection;
+				if (gridx == 18 || gridx == 19)
+					enemy.teleporting = true;
+				else if (grid[gridy][gridx + 1] == 0)
+					enemydirection = nextenemydirection;
 				else
-				 	enemy.x+=enemy.xspeed;
+					enemy.x += enemy.xspeed;
 			}
 		}
 		else
 		{
-			if (enemy.x==WIDTH+30)
+			if (enemy.x == WIDTH + 30)
 			{
-				enemy.x=-30;
-				enemy.teleporting=false;
+				enemy.x = -30;
+				enemy.teleporting = false;
 			}
 			else
-				enemy.x+=enemy.xspeed;
+				enemy.x += enemy.xspeed;
 		}
 	}
-	if (enemydirection==DIRECTIONDOWN)
+	if (enemydirection == DIRECTIONDOWN)
 	{
-		if (grid[gridy+1][gridx]==1 && enemy.y%30+enemy.yspeed<=30)
+		if (grid[gridy + 1][gridx] == 1 && enemy.y % 30 + enemy.yspeed <= 30)
 		{
-			enemy.y+=enemy.yspeed;
+			enemy.y += enemy.yspeed;
 		}
-		else if (grid[gridy+1][gridx]==1 && enemy.y%30+enemy.yspeed>30)
+		else if (grid[gridy + 1][gridx] == 1 && enemy.y % 30 + enemy.yspeed > 30)
 		{
-			enemy.y+=30-enemy.y%30;
+			enemy.y += 30 - enemy.y % 30;
 		}
 		else
 		{
-			if (grid[gridy+1][gridx]==0)
-				enemydirection=nextenemydirection;
+			if (grid[gridy + 1][gridx] == 0)
+				enemydirection = nextenemydirection;
 			else
-				enemy.y+=enemy.yspeed;
+				enemy.y += enemy.yspeed;
 		}
 	}
-	grid[8][9]=0;
-	enemy.direction=enemydirection;
-	enemy.ndirection=nextenemydirection;
+	grid[8][9] = 0;
+	enemy.direction = enemydirection;
+	enemy.ndirection = nextenemydirection;
 	return enemy;
 }
 
-int checkcollisionwithenemy (struct enemysprite enemy, struct sprite pacman)
+int checkcollisionwithenemy(struct enemysprite enemy, struct sprite pacman)
 {
-	int distancex=enemy.x-pacman.x;
-	distancex=distancex*distancex;
-	int distancey=enemy.y-pacman.y;
-	distancey=distancey*distancey;
-	if (distancex+distancey<=900)
+	int distancex = enemy.x - pacman.x;
+	distancex = distancex * distancex;
+	int distancey = enemy.y - pacman.y;
+	distancey = distancey * distancey;
+	if (distancex + distancey <= 900)
 		return 1;
 	else
 		return 0;
@@ -610,35 +609,35 @@ void startplayer(Uint32 code)
 {
 	if (code == SDLK_UP)
 	{
-		up=true;
-		if (direction==0)
-			direction=DIRECTIONUP;
+		up = true;
+		if (direction == 0)
+			direction = DIRECTIONUP;
 		else
-			nextdirection=DIRECTIONUP;
+			nextdirection = DIRECTIONUP;
 	}
 	if (code == SDLK_DOWN)
 	{
-		down=true;
-		if (direction==0)
-			direction=DIRECTIONDOWN;
+		down = true;
+		if (direction == 0)
+			direction = DIRECTIONDOWN;
 		else
-			nextdirection=DIRECTIONDOWN;
+			nextdirection = DIRECTIONDOWN;
 	}
 	if (code == SDLK_LEFT)
 	{
-		left=true;
-		if (direction==0)
-			direction=DIRECTIONLEFT;
+		left = true;
+		if (direction == 0)
+			direction = DIRECTIONLEFT;
 		else
-			nextdirection=DIRECTIONLEFT;
+			nextdirection = DIRECTIONLEFT;
 	}
 	if (code == SDLK_RIGHT)
 	{
-		right=true;
-		if (direction==0)
-			direction=DIRECTIONRIGHT;
+		right = true;
+		if (direction == 0)
+			direction = DIRECTIONRIGHT;
 		else
-			nextdirection=DIRECTIONRIGHT;
+			nextdirection = DIRECTIONRIGHT;
 	}
 }
 
@@ -646,53 +645,53 @@ void startplayer(Uint32 code)
 void stopplayer(Uint32 code)
 {
 	if (code == SDLK_UP)
-		up=false;
+		up = false;
 	if (code == SDLK_DOWN)
-		down=false;
+		down = false;
 	if (code == SDLK_LEFT)
-		left=false;
+		left = false;
 	if (code == SDLK_RIGHT)
-		right=false;
+		right = false;
 }
 
-const char* changeimage(Uint32 *starttime)
+const char *changeimage(Uint32 *starttime)
 {
-	unsigned int currenttime=SDL_GetTicks();
-	if (currenttime-*starttime>60)
+	unsigned int currenttime = SDL_GetTicks();
+	if (currenttime - *starttime > 60)
 	{
-		*starttime=currenttime;
-		if (imagetoggle==0||imagetoggle==2)
+		*starttime = currenttime;
+		if (imagetoggle == 0 || imagetoggle == 2)
 		{
-			previoustoggle=imagetoggle;
-			imagetoggle=1;
-			if (direction==DIRECTIONRIGHT)
+			previoustoggle = imagetoggle;
+			imagetoggle = 1;
+			if (direction == DIRECTIONRIGHT)
 				return "PacManMid-right.png";
-			else if (direction==DIRECTIONLEFT)
+			else if (direction == DIRECTIONLEFT)
 				return "PacManMid-left.png";
-			else if (direction==DIRECTIONUP)
+			else if (direction == DIRECTIONUP)
 				return "PacManMid-up.png";
-			else if (direction==DIRECTIONDOWN)
+			else if (direction == DIRECTIONDOWN)
 				return "PacManMid-down.png";
 		}
-		else 
+		else
 		{
-			if (previoustoggle==0)
+			if (previoustoggle == 0)
 			{
-				previoustoggle=imagetoggle;
-				imagetoggle=2;
-				if (direction==DIRECTIONRIGHT)
+				previoustoggle = imagetoggle;
+				imagetoggle = 2;
+				if (direction == DIRECTIONRIGHT)
 					return "PacManOpen-right.png";
-				else if (direction==DIRECTIONLEFT)
+				else if (direction == DIRECTIONLEFT)
 					return "PacManOpen-left.png";
-				else if (direction==DIRECTIONUP)
+				else if (direction == DIRECTIONUP)
 					return "PacManOpen-up.png";
-				else if (direction==DIRECTIONDOWN)
+				else if (direction == DIRECTIONDOWN)
 					return "PacManOpen-down.png";
 			}
 			else
 			{
-				previoustoggle=imagetoggle;
-				imagetoggle=0;
+				previoustoggle = imagetoggle;
+				imagetoggle = 0;
 				return "PacManClosed.png";
 			}
 		}
@@ -700,108 +699,108 @@ const char* changeimage(Uint32 *starttime)
 	return pacmanimage;
 }
 
-void calculateinitialpellets ()
+void calculateinitialpellets()
 {
-	for (int i=0;i<21;i++)
+	for (int i = 0; i < 21; i++)
 	{
-		for (int j=0;j<19;j++)
+		for (int j = 0; j < 19; j++)
 		{
-			if (grid[i][j]==0||(i>=6&&i<=14)&&(j>=5&&j<=13)||((i>=7&&i<13)&&(j<4||j>14)))
+			if (grid[i][j] == 0 || (i >= 6 && i <= 14) && (j >= 5 && j <= 13) || ((i >= 7 && i < 13) && (j < 4 || j > 14)))
 			{
-				pellets[2*i][2*j]=0;
-				pellets[2*i+1][2*j]=0;
-				pellets[2*i][2*j+1]=0;
-				pellets[2*i+1][2*j+1]=0;
+				pellets[2 * i][2 * j] = 0;
+				pellets[2 * i + 1][2 * j] = 0;
+				pellets[2 * i][2 * j + 1] = 0;
+				pellets[2 * i + 1][2 * j + 1] = 0;
 			}
 			else
 			{
-				if (grid[i-1][j]==0||grid[i][j-1]==0||grid[i-1][j-1]==0)
-					pellets[2*i][2*j]=0;
+				if (grid[i - 1][j] == 0 || grid[i][j - 1] == 0 || grid[i - 1][j - 1] == 0)
+					pellets[2 * i][2 * j] = 0;
 				else
 				{
 					pelletcount++;
-					pellets[2*i][2*j]=1;
+					pellets[2 * i][2 * j] = 1;
 				}
-				if (grid[i][j-1]==0)
-					pellets[2*i+1][2*j]==0;
+				if (grid[i][j - 1] == 0)
+					pellets[2 * i + 1][2 * j] == 0;
 				else
 				{
 					pelletcount++;
-					pellets[2*i+1][2*j]=1;
+					pellets[2 * i + 1][2 * j] = 1;
 				}
-				if (grid[i-1][j]==0)
-					pellets[2*i][2*j+1]=0;
+				if (grid[i - 1][j] == 0)
+					pellets[2 * i][2 * j + 1] = 0;
 				else
 				{
 					pelletcount++;
-					pellets[2*i][2*j+1]=1;
+					pellets[2 * i][2 * j + 1] = 1;
 				}
 				pelletcount++;
-				pellets[2*i+1][2*j+1]=1;
+				pellets[2 * i + 1][2 * j + 1] = 1;
 			}
 		}
 	}
-	pellets[30][17]=0;
-	pellets[30][21]=0;
-	pellets[27][28]=0;
-	pellets[19][28]=0;
-	pellets[31][18]=0;
-	pellets[31][19]=0;
-	pellets[31][20]=0;
-	pellets[19][8]=0;
-	pelletcount-=8;
+	pellets[30][17] = 0;
+	pellets[30][21] = 0;
+	pellets[27][28] = 0;
+	pellets[19][28] = 0;
+	pellets[31][18] = 0;
+	pellets[31][19] = 0;
+	pellets[31][20] = 0;
+	pellets[19][8] = 0;
+	pelletcount -= 8;
 	//printf("%d\n",pellets[3][34]);
 }
 
-void printpelletgrid ()
+void printpelletgrid()
 {
-	for (int i=0;i<42;i++)
+	for (int i = 0; i < 42; i++)
 	{
-		for (int j=0;j<38;j++)
-			printf("%d ",pellets[i][j]);
+		for (int j = 0; j < 38; j++)
+			printf("%d ", pellets[i][j]);
 		printf("\n");
 	}
 }
 
-int animationdirection=1;
-int largepelletsize=8;
+int animationdirection = 1;
+int largepelletsize = 8;
 
 void drawpellets(SDL_Renderer *renderer, Uint32 *animationstarttime)
 {
-	unsigned int currenttime=SDL_GetTicks();
-	for (int i=0;i<42;i++)
+	unsigned int currenttime = SDL_GetTicks();
+	for (int i = 0; i < 42; i++)
 	{
-		for (int j=0;j<38;j++)
+		for (int j = 0; j < 38; j++)
 		{
-			if (pellets[i][j]==1)
+			if (pellets[i][j] == 1)
 			{
 				//printf("%d %d\n",20*i,20*j);
 				SDL_Rect rect;
-				if ((i==5&&j==3)||(i==5&&j==35)||(i==37&&j==3)||(i==37&&j==35))
+				if ((i == 5 && j == 3) || (i == 5 && j == 35) || (i == 37 && j == 3) || (i == 37 && j == 35))
 				{
-					if (currenttime-*animationstarttime>=120)
+					if (currenttime - *animationstarttime >= 120)
 					{
-						if (largepelletsize==9||largepelletsize==7)
+						if (largepelletsize == 9 || largepelletsize == 7)
 						{
-							if (animationdirection==1)
-								animationdirection=-1;
+							if (animationdirection == 1)
+								animationdirection = -1;
 							else
-								animationdirection=1;
+								animationdirection = 1;
 						}
-						largepelletsize+=animationdirection;
-						*animationstarttime=currenttime;
+						largepelletsize += animationdirection;
+						*animationstarttime = currenttime;
 					}
-					rect.x=15*j-2;
-					rect.y=15*i-2+30;
-					rect.w=largepelletsize;
-					rect.h=largepelletsize;
+					rect.x = 15 * j - 2;
+					rect.y = 15 * i - 2 + 30;
+					rect.w = largepelletsize;
+					rect.h = largepelletsize;
 				}
 				else
 				{
-					rect.x=15*j;
-					rect.y=15*i+30;
-					rect.w=4;
-					rect.h=4;
+					rect.x = 15 * j;
+					rect.y = 15 * i + 30;
+					rect.w = 4;
+					rect.h = 4;
 				}
 
 				SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -812,104 +811,99 @@ void drawpellets(SDL_Renderer *renderer, Uint32 *animationstarttime)
 	}
 }
 
-void checkcollisionwithpellets (struct sprite s) 
+void checkcollisionwithpellets(struct sprite s)
 {
-	int pacmanx=s.x/15;
-	int pacmany=(s.y-30)/15;
+	int pacmanx = s.x / 15;
+	int pacmany = (s.y - 30) / 15;
 	pacmanx++;
 	pacmany++;
-	int scoretobeadded=10;
-	if (pacmany==5)
+	int scoretobeadded = 10;
+	if (pacmany == 5)
 	{
-		if (pacmanx==3||pacmanx==35)
-			scoretobeadded=50;
+		if (pacmanx == 3 || pacmanx == 35)
+			scoretobeadded = 50;
 	}
-	else if (pacmany==37)
+	else if (pacmany == 37)
 	{
-		if (pacmanx==3||pacmanx==35)
-			scoretobeadded=50;
+		if (pacmanx == 3 || pacmanx == 35)
+			scoretobeadded = 50;
 	}
 	//printf("%d %d %d\n",pacmanx,pacmany, pellets[pacmany][pacmanx]);
-	if (direction==DIRECTIONDOWN)
+	if (direction == DIRECTIONDOWN)
 	{
-		if (pellets[pacmany][pacmanx]==1)
+		if (pellets[pacmany][pacmanx] == 1)
 		{
 			//printf("Made it here\n");
-			pellets[pacmany][pacmanx]=0;
-			score+=scoretobeadded;
+			pellets[pacmany][pacmanx] = 0;
+			score += scoretobeadded;
 			pelletcount--;
 		}
 	}
-	else if (direction==DIRECTIONUP)
+	else if (direction == DIRECTIONUP)
 	{
-		if (pellets[pacmany][pacmanx]==1)
+		if (pellets[pacmany][pacmanx] == 1)
 		{
-			pellets[pacmany][pacmanx]=0;
-			score+=scoretobeadded;
+			pellets[pacmany][pacmanx] = 0;
+			score += scoretobeadded;
 			pelletcount--;
 		}
 	}
-	else if (direction==DIRECTIONRIGHT)
+	else if (direction == DIRECTIONRIGHT)
 	{
-		if (pellets[pacmany][pacmanx]==1)
+		if (pellets[pacmany][pacmanx] == 1)
 		{
-			pellets[pacmany][pacmanx]=0;
-			score+=scoretobeadded;
+			pellets[pacmany][pacmanx] = 0;
+			score += scoretobeadded;
 			pelletcount--;
 		}
 	}
-	else if (direction==DIRECTIONLEFT)
+	else if (direction == DIRECTIONLEFT)
 	{
-		if (pellets[pacmany][pacmanx]==1)
+		if (pellets[pacmany][pacmanx] == 1)
 		{
-			pellets[pacmany][pacmanx]=0;
-			score+=scoretobeadded;
+			pellets[pacmany][pacmanx] = 0;
+			score += scoretobeadded;
 			pelletcount--;
 		}
 	}
 }
 
-void displayscoreboard(TTF_Font* Sans,SDL_Renderer *renderer)
+void displayscoreboard(TTF_Font *Sans, SDL_Renderer *renderer)
 {
 	//Makes a surface and texture to display said score
 	char scorestr[5];
-	sprintf(scorestr,"%d",score);
-	SDL_Surface* messagesurface = TTF_RenderText_Solid(Sans,scorestr,White);
-	SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer,messagesurface);
+	sprintf(scorestr, "%d", score);
+	SDL_Surface *messagesurface = TTF_RenderText_Solid(Sans, scorestr, White);
+	SDL_Texture *Message = SDL_CreateTextureFromSurface(renderer, messagesurface);
 
 	SDL_Rect messagerect;
-	messagerect.x=78;
-	messagerect.y=3;
-	messagerect.h=24;
-	if (score==0)
-		messagerect.w=15;
-	else if (score<10)
-		messagerect.w=20;
-	else if (score<100)
-		messagerect.w=30;
-	else if (score<1000)
-		messagerect.w=40;
-	else if (score<10000)
-		messagerect.w=50;
+	messagerect.x = 78;
+	messagerect.y = 3;
+	messagerect.h = 24;
+	if (score == 0)
+		messagerect.w = 15;
+	else if (score < 10)
+		messagerect.w = 20;
+	else if (score < 100)
+		messagerect.w = 30;
+	else if (score < 1000)
+		messagerect.w = 40;
+	else if (score < 10000)
+		messagerect.w = 50;
 	else
-		messagerect.w=60;
+		messagerect.w = 60;
 
-	SDL_RenderCopy(renderer,Message,NULL,&messagerect);
+	SDL_RenderCopy(renderer, Message, NULL, &messagerect);
 
 	SDL_FreeSurface(messagesurface);
 }
 
-
-
-
-
-
 int main()
 {
 	//function that initialises everything in the SDL library
-	if (init()==-1)
+	if (init() == -1)
 		return -1;
-	if (TTF_Init()<0)
+	if (TTF_Init() < 0)
 		return -1;
 	//printf("Made it here\n");
 
@@ -917,124 +911,123 @@ int main()
 	srand(time(0));
 
 	//initialises the window and the renderer
-	SDL_Window* window = SDL_CreateWindow("GAME", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT+30, SDL_WINDOW_ALLOW_HIGHDPI);
-	SDL_Renderer* renderer = SDL_CreateRenderer(window,-1,0);
-	
+	SDL_Window *window = SDL_CreateWindow("GAME", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT + 30, SDL_WINDOW_ALLOW_HIGHDPI);
+	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
+
 	//initialises the image for the background
-	SDL_Surface *background=IMG_Load("pacman_grid.png");
+	SDL_Surface *background = IMG_Load("pacman_grid.png");
 	SDL_Texture *backgroundtexture = SDL_CreateTextureFromSurface(renderer, background);
 	SDL_FreeSurface(background);
-	
+
 	//this makes the window stop being fullscreen
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	SDL_SetWindowFullscreen(window, 0);
 	SDL_RenderPresent(renderer);
-	
+
 	//Loads up Pac Man, and sets his initial position and size
-	SDL_Surface *PacMan=IMG_Load(pacmanimage);
-	SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer,PacMan);
+	SDL_Surface *PacMan = IMG_Load(pacmanimage);
+	SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer, PacMan);
 	SDL_Rect pacman;
-	SDL_QueryTexture(PacMan,NULL,NULL,&pacman.w,&pacman.h);
-	pacman.w=SCALE;
-	pacman.h=SCALE;
+	SDL_QueryTexture(PacMan, NULL, NULL, &pacman.w, &pacman.h);
+	pacman.w = SCALE;
+	pacman.h = SCALE;
 	//this rectangle could have had its x and y coordinates set over here, but they will be assigned to the x and y coordinates of the structure player.
 
 	//loads up blinky, and sets up his initial position and size
-	SDL_Surface *BlinkySurface=IMG_Load("blinky.png");
-	SDL_Texture *BlinkyTexture = SDL_CreateTextureFromSurface(renderer,BlinkySurface);
+	SDL_Surface *BlinkySurface = IMG_Load("blinky.png");
+	SDL_Texture *BlinkyTexture = SDL_CreateTextureFromSurface(renderer, BlinkySurface);
 	SDL_Rect blinkyrect;
-	SDL_QueryTexture(BlinkySurface,NULL,NULL,&blinkyrect.w,&blinkyrect.h);
-	blinkyrect.w=SCALE;
-	blinkyrect.h=SCALE;
+	SDL_QueryTexture(BlinkySurface, NULL, NULL, &blinkyrect.w, &blinkyrect.h);
+	blinkyrect.w = SCALE;
+	blinkyrect.h = SCALE;
 
 	//loads up inky
-	SDL_Surface *InkySurface=IMG_Load("inkyright.png");
-	SDL_Texture *InkyTexture = SDL_CreateTextureFromSurface(renderer,InkySurface);
+	SDL_Surface *InkySurface = IMG_Load("inkyright.png");
+	SDL_Texture *InkyTexture = SDL_CreateTextureFromSurface(renderer, InkySurface);
 	SDL_Rect inkyrect;
-	SDL_QueryTexture(InkyTexture,NULL,NULL,&inkyrect.w,&inkyrect.h);
-	inkyrect.w=SCALE;
-	inkyrect.h=SCALE;
+	SDL_QueryTexture(InkyTexture, NULL, NULL, &inkyrect.w, &inkyrect.h);
+	inkyrect.w = SCALE;
+	inkyrect.h = SCALE;
 
-	SDL_Surface *PinkySurface=IMG_Load("pinkyright.png");
-	SDL_Texture *PinkyTexture=SDL_CreateTextureFromSurface(renderer,PinkySurface);
+	SDL_Surface *PinkySurface = IMG_Load("pinkyright.png");
+	SDL_Texture *PinkyTexture = SDL_CreateTextureFromSurface(renderer, PinkySurface);
 	SDL_Rect pinkyrect;
-	SDL_QueryTexture(PinkyTexture,NULL,NULL,&pinkyrect.w,&pinkyrect.h);
-	pinkyrect.w=SCALE;
-	pinkyrect.h=SCALE;
+	SDL_QueryTexture(PinkyTexture, NULL, NULL, &pinkyrect.w, &pinkyrect.h);
+	pinkyrect.w = SCALE;
+	pinkyrect.h = SCALE;
 
-	SDL_Surface *ClydeSurface=IMG_Load("clyderight.png");
-	SDL_Texture *ClydeTexture=SDL_CreateTextureFromSurface(renderer,ClydeSurface);
+	SDL_Surface *ClydeSurface = IMG_Load("clyderight.png");
+	SDL_Texture *ClydeTexture = SDL_CreateTextureFromSurface(renderer, ClydeSurface);
 	SDL_Rect clyderect;
-	SDL_QueryTexture(ClydeTexture,NULL,NULL,&clyderect.w,&clyderect.h);
-	clyderect.w=SCALE;
-	clyderect.h=SCALE;
+	SDL_QueryTexture(ClydeTexture, NULL, NULL, &clyderect.w, &clyderect.h);
+	clyderect.w = SCALE;
+	clyderect.h = SCALE;
 
 	//initialises the background, and sets the whole rectangle for the background image
 	SDL_Rect bg;
 	SDL_QueryTexture(backgroundtexture, NULL, NULL, &bg.w, &bg.h);
-	bg.w=WIDTH;
-	bg.h=HEIGHT;
-	bg.x=0;
-	bg.y=30;
+	bg.w = WIDTH;
+	bg.h = HEIGHT;
+	bg.x = 0;
+	bg.y = 30;
 
 	//initialises the player completely
 	struct sprite player;
-	player.x=WIDTH/2-SCALE/2;
-	player.y=HEIGHT/2+SCALE/2+150;
-	player.xspeed=SPEED;
-	player.yspeed=SPEED;
-	player.teleporting=false;
+	player.x = WIDTH / 2 - SCALE / 2;
+	player.y = HEIGHT / 2 + SCALE / 2 + 150;
+	player.xspeed = SPEED;
+	player.yspeed = SPEED;
+	player.teleporting = false;
 
 	struct enemysprite blinky;
-	blinky=initialiseblinky();
+	blinky = initialiseblinky();
 	struct enemysprite inky;
-	inky=initialiseinky();
+	inky = initialiseinky();
 	struct enemysprite pinky;
-	pinky=initialisepinky();
+	pinky = initialisepinky();
 	struct enemysprite clyde;
-	clyde=initialiseclyde();
+	clyde = initialiseclyde();
 	//printf("%d %d\n",blinky.x,blinky.y);
 
 	//initialises the enemies completely
 
-
 	//Loads up the font that will be used to display the score
-	TTF_Font* font = TTF_OpenFont("sans.ttf", 24);
-	SDL_Surface* messagesurface = TTF_RenderText_Solid(font,"Score:",White);
-	SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer,messagesurface);
+	TTF_Font *font = TTF_OpenFont("sans.ttf", 24);
+	SDL_Surface *messagesurface = TTF_RenderText_Solid(font, "Score:", White);
+	SDL_Texture *Message = SDL_CreateTextureFromSurface(renderer, messagesurface);
 
 	SDL_Rect messagerect;
-	messagerect.x=8;
-	messagerect.y=3;
-	messagerect.h=24;
-	messagerect.w=70;
+	messagerect.x = 8;
+	messagerect.y = 3;
+	messagerect.h = 24;
+	messagerect.w = 70;
 
-	SDL_RenderCopy(renderer,Message,NULL,&messagerect);
+	SDL_RenderCopy(renderer, Message, NULL, &messagerect);
 	SDL_FreeSurface(messagesurface);
 
 	//Checks for errors in initialisation and creation of the window, the background, and the image for PacMan itself and prints the error
 	if (window == NULL)
 		printf("Window could not be created : %s\n", SDL_GetError());
 
-	if (background==NULL)
+	if (background == NULL)
 		printf("Background could not be initialized properly: %s\n", SDL_GetError());
 
-	if (PacMan==NULL)
+	if (PacMan == NULL)
 		printf("The image for Pac Man did not initialise properly\n");
 
 	//creates a window event object for mouse movements, button clicks, etc
 	SDL_Event event;
 
 	//Some important variables that need to be initialised here;
-	bool playing=1;
+	bool playing = 1;
 	Uint32 code;
-	int temp=0,temp2=0,temp3=0;
-	Uint32 *starttime=&temp;
-	Uint32 *pelletstarttime=&temp2;
+	int temp = 0, temp2 = 0, temp3 = 0;
+	Uint32 *starttime = &temp;
+	Uint32 *pelletstarttime = &temp2;
 
 	calculateinitialpellets();
 
-	while(playing)
+	while (playing)
 	{
 		/*ticks=SDL_GetTicks();
 		if (ticks-previousticks>=15) 
@@ -1045,114 +1038,115 @@ int main()
 		{
 			//checking if the user decides to click on the quit button
 			if (SDL_QUIT == event.type)
-				playing=0;
+				playing = 0;
 			else if (event.type == SDL_KEYDOWN)
 			{
-				code=event.key.keysym.sym;
+				code = event.key.keysym.sym;
 				startplayer(code);
 			}
-			else if (event.type==SDL_KEYUP)
+			else if (event.type == SDL_KEYUP)
 			{
-				code=event.key.keysym.sym;
+				code = event.key.keysym.sym;
 				stopplayer(code);
 			}
 		}
 
-		if (pelletcount==0) {
+		if (pelletcount == 0)
+		{
 			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 			SDL_RenderClear(renderer);
 			calculateinitialpellets();
-			SDL_RenderCopy(renderer,backgroundtexture,NULL,&bg);
+			SDL_RenderCopy(renderer, backgroundtexture, NULL, &bg);
 			SDL_RenderPresent(renderer);
 			level++;
-			player.x=WIDTH/2-SCALE/2;
-			player.y=HEIGHT/2+SCALE/2+150;
-			blinky=initialiseblinky();
-			inky=initialiseinky();
-			inky.timetostart=SDL_GetTicks()+15000;
-			pinky=initialisepinky();
-			pinky.timetostart=SDL_GetTicks()+5000;
-			clyde=initialiseclyde();
-			clyde.timetostart=SDL_GetTicks()+10000;
+			player.x = WIDTH / 2 - SCALE / 2;
+			player.y = HEIGHT / 2 + SCALE / 2 + 150;
+			blinky = initialiseblinky();
+			inky = initialiseinky();
+			inky.timetostart = SDL_GetTicks() + 15000;
+			pinky = initialisepinky();
+			pinky.timetostart = SDL_GetTicks() + 5000;
+			clyde = initialiseclyde();
+			clyde.timetostart = SDL_GetTicks() + 10000;
 			SDL_Delay(1500);
 		}
 
-		if (checkcollisionwithenemy(blinky,player)||checkcollisionwithenemy(inky,player)||checkcollisionwithenemy(clyde,player)||checkcollisionwithenemy(pinky,player))
+		if (checkcollisionwithenemy(blinky, player) || checkcollisionwithenemy(inky, player) || checkcollisionwithenemy(clyde, player) || checkcollisionwithenemy(pinky, player))
 		{
 			SDL_Delay(1500);
 			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 			SDL_RenderClear(renderer);
 			//calculateinitialpellets();
-			SDL_RenderCopy(renderer,backgroundtexture,NULL,&bg);
+			SDL_RenderCopy(renderer, backgroundtexture, NULL, &bg);
 			SDL_RenderPresent(renderer);
 			level++;
-			player.x=WIDTH/2-SCALE/2;
-			player.y=HEIGHT/2+SCALE/2+150;
-			blinky=initialiseblinky();
-			inky=initialiseinky();
-			inky.timetostart=SDL_GetTicks()+15000;
-			pinky=initialisepinky();
-			pinky.timetostart=SDL_GetTicks()+5000;
-			clyde=initialiseclyde();
-			clyde.timetostart=SDL_GetTicks()+10000;
+			player.x = WIDTH / 2 - SCALE / 2;
+			player.y = HEIGHT / 2 + SCALE / 2 + 150;
+			blinky = initialiseblinky();
+			inky = initialiseinky();
+			inky.timetostart = SDL_GetTicks() + 15000;
+			pinky = initialisepinky();
+			pinky.timetostart = SDL_GetTicks() + 5000;
+			clyde = initialiseclyde();
+			clyde.timetostart = SDL_GetTicks() + 10000;
 		}
 
 		//the following is responsible for the animation of Pac Man
-		pacmanimage=changeimage(starttime);
+		pacmanimage = changeimage(starttime);
 
-		SDL_Surface *PacMan=IMG_Load(pacmanimage);
-		SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer,PacMan);
+		SDL_Surface *PacMan = IMG_Load(pacmanimage);
+		SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer, PacMan);
 		SDL_Rect pacman;
-		SDL_QueryTexture(PacMan,NULL,NULL,&pacman.w,&pacman.h);
+		SDL_QueryTexture(PacMan, NULL, NULL, &pacman.w, &pacman.h);
 
-		pacman.w=SCALE;
-		pacman.h=SCALE;
+		pacman.w = SCALE;
+		pacman.h = SCALE;
 
 		//Moves the player
-		player=move(player);
-		pacman.x=player.x;
-		pacman.y=player.y;
+		player = move(player);
+		pacman.x = player.x;
+		pacman.y = player.y;
 
-		blinky=moveenemy(blinky);
-		blinkyrect.x=blinky.x;
-		blinkyrect.y=blinky.y;
+		blinky = moveenemy(blinky);
+		blinkyrect.x = blinky.x;
+		blinkyrect.y = blinky.y;
 
-		inky=moveenemy(inky);
-		inkyrect.x=inky.x;
-		inkyrect.y=inky.y;
+		inky = moveenemy(inky);
+		inkyrect.x = inky.x;
+		inkyrect.y = inky.y;
 
-		pinky=moveenemy(pinky);
-		pinkyrect.x=pinky.x;
-		pinkyrect.y=pinky.y;
+		pinky = moveenemy(pinky);
+		pinkyrect.x = pinky.x;
+		pinkyrect.y = pinky.y;
 
-		clyde=moveenemy(clyde);
-		clyderect.x=clyde.x;
-		clyderect.y=clyde.y;
+		clyde = moveenemy(clyde);
+		clyderect.x = clyde.x;
+		clyderect.y = clyde.y;
 		//printf("blinky.x=%d\t blinky.y=%d\n",blinky.x,blinky.y);
 
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 		SDL_RenderClear(renderer);
-		
+
 		//All actual displaying and rendering happens in this final bit, after all calculations have been completed
-		updatescreen(renderer,backgroundtexture,PacManTexture,&pacman,&bg);
+		updatescreen(renderer, backgroundtexture, PacManTexture, &pacman, &bg);
 		checkcollisionwithpellets(player);
 		//printpelletgrid();
-		drawpellets(renderer,pelletstarttime);
-		SDL_RenderCopy(renderer,BlinkyTexture,NULL,&blinkyrect);
-		SDL_RenderCopy(renderer,InkyTexture,NULL,&inkyrect);
-		SDL_RenderCopy(renderer,PinkyTexture,NULL,&pinkyrect);
-		SDL_RenderCopy(renderer,ClydeTexture,NULL,&clyderect);
+		drawpellets(renderer, pelletstarttime);
+		SDL_RenderCopy(renderer, BlinkyTexture, NULL, &blinkyrect);
+		SDL_RenderCopy(renderer, InkyTexture, NULL, &inkyrect);
+		SDL_RenderCopy(renderer, PinkyTexture, NULL, &pinkyrect);
+		SDL_RenderCopy(renderer, ClydeTexture, NULL, &clyderect);
 		//printf("%d\n",score);
 
-		if (font==NULL) 
+		if (font == NULL)
 		{
 			printf("Failed to load font\n");
-			printf("Error is: %s\n",TTF_GetError());
+			printf("Error is: %s\n", TTF_GetError());
 		}
 		else
 		{
-			SDL_RenderCopy(renderer,Message,NULL,&messagerect);
-			displayscoreboard(font,renderer);
+			SDL_RenderCopy(renderer, Message, NULL, &messagerect);
+			displayscoreboard(font, renderer);
 		}
 		//drawrectangle(renderer, blinky.x, blinky.y, SCALE, SCALE);
 		SDL_RenderPresent(renderer);
