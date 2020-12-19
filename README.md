@@ -29,3 +29,5 @@ On linux, the command to install the SDL2_image library is:
 
 Currently, SDL2's libraries seem to have been updated, in the way they function, and some functions appear to be deprecated.
 This project might have to be updated in the future, but it currently will not work upon installation.
+
+I'll attach some screenshots and maybe even a video demo once I get it to run perfectly.
