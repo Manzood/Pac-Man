@@ -6,7 +6,7 @@ The remaining assets, used or unused, are also provided in this repository.
 You should be able to build it on another system with the SDL2 and TTF libraries installed.
 
 There are various tutorials for installing SDL2 on your computer, which will be required to run the code in this project
-The main website for SDL2 is linked here: 
+The main website for SDL2 is linked here:
  https://www.libsdl.org/download-2.0.php. <br>
 On linux, a simple look at this tutorial could help with installation:      https://lazyfoo.net/tutorials/SDL/01_hello_SDL/linux/index.php. <br>
 
@@ -17,17 +17,16 @@ The images used in this project were found from various sources on the internet,
 
 SDL_ttf is a library that I had insttalled on linux using the command: "sudo apt-get install libsdl2-ttf.dev"
 That's all that was required on linux
- 
+
 For Windows users, they seem to have a lot more detailed and simplified instructions on the main SDL-ttf website:
   https://www.libsdl.org/projects/SDL_ttf/. <br>
 
-Also, a tutorial on SDL_ttf can be found here: 
+Also, a tutorial on SDL_ttf can be found here:
   http://gigi.nullneuron.net/gigilabs/displaying-text-in-sdl2-with-sdl_ttf/
 
 On linux, the command to install the SDL2_image library is:
     ```sudo apt-get install libsdl-image1.2-dev```
 
-<<<<<<< HEAD
 Update:
     SDL2 seems to have been updated since this project was made, so it may not work with an install of the latest binaries.
     In the future, I might port it and make sure everything works, but at the moment, the project will not commpile
@@ -37,4 +36,3 @@ Currently, SDL2's libraries seem to have been updated, in the way they function,
 This project might have to be updated in the future, but it currently will not work upon installation.
 
 I'll attach some screenshots and maybe even a video demo once I get it to run perfectly.
->>>>>>> 83951e63d93e1c8f231a1d6b8ff243444caac56f
