@@ -31,3 +31,7 @@ Also, a tutorial on SDL_ttf can be found here:
 Command to install the SDL2_image library:
     ```sudo apt-get install libsdl-image1.2-dev```
 
+Update:
+    SDL2 seems to have been updated since this project was made, so it may not work with an install of the latest binaries.
+    In the future, I might port it and make sure everything works, but at the moment, the project will not commpile
+

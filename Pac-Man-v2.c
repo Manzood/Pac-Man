@@ -126,7 +126,7 @@ void togglefullscreen(SDL_Window *window)
 {
 	Uint32 FullScreen = SDL_WINDOW_FULLSCREEN;
 	int status = SDL_GetWindowFlags(window);
-	if (status = FullScreen)
+	if (status == FullScreen)
 		SDL_SetWindowFullscreen(window, 0);
 	else
 		SDL_SetWindowFullscreen(window, FullScreen);
@@ -1030,7 +1030,7 @@ int main()
 	while (playing)
 	{
 		/*ticks=SDL_GetTicks();
-		if (ticks-previousticks>=15) 
+		if (ticks-previousticks>=15)
 		{
 			previousticks=ticks;
 */
@@ -1157,7 +1157,7 @@ int main()
 
 	SDL_FreeSurface(messagesurface);
 	SDL_DestroyWindow(window);
-	SDL_Quit;
+	SDL_Quit();
 
 	return 0;
 }
