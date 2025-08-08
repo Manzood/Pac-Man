@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include <SDL2/SDL.h>
-#include <SDL/SDL_image.h>
-#include <SDL2/SDL_timer.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_timer.h>
+#include <SDL_ttf.h>
 #include <stdbool.h>
 #include <math.h>
 #include <time.h>
@@ -36,12 +36,12 @@
 
 int FPS = 110;
 bool up = false, down = false, left = false, right = false;
-char *pacmanimage = "PacManOpen-right.png";
+const char *pacmanimage = "PacManOpen-right.png";
 int imagetoggle = 0; //0=closed,1=mid-range open mouth and 2=fully open mouth
 int previoustoggle = 0;
 int score = 0;
 int pelletcount = 0;
-SDL_Color White = {255, 255, 255};
+SDL_Color White = (SDL_Color){255, 255, 255, 255};
 
 //So these three variables determine the logic behind which direction Pac-Man will turn
 //In the original game, the direction you entered was saved so that the second you hit a dead end Pac-Man would change direction
@@ -110,7 +110,7 @@ int grid[21][19] = {
 int pellets[42][38];
 
 //basic initialisation function for SDL
-int init()
+int init(void)
 {
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 		printf("Error initialising SDL = %s\n", SDL_GetError());
@@ -722,7 +722,7 @@ void calculateinitialpellets()
 					pellets[2 * i][2 * j] = 1;
 				}
 				if (grid[i][j - 1] == 0)
-					pellets[2 * i + 1][2 * j] == 0;
+					pellets[2 * i + 1][2 * j] = 0;
 				else
 				{
 					pelletcount++;
@@ -914,6 +914,11 @@ int main()
 	SDL_Window *window = SDL_CreateWindow("GAME", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT + 30, SDL_WINDOW_ALLOW_HIGHDPI);
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 
+	// Ensure consistent logical size on HiDPI/Retina so content is not tiny
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+	SDL_RenderSetLogicalSize(renderer, WIDTH, HEIGHT + 30);
+	SDL_RenderSetIntegerScale(renderer, SDL_TRUE);
+
 	//initialises the image for the background
 	SDL_Surface *background = IMG_Load("pacman_grid.png");
 	SDL_Texture *backgroundtexture = SDL_CreateTextureFromSurface(renderer, background);
@@ -928,7 +933,7 @@ int main()
 	SDL_Surface *PacMan = IMG_Load(pacmanimage);
 	SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer, PacMan);
 	SDL_Rect pacman;
-	SDL_QueryTexture(PacMan, NULL, NULL, &pacman.w, &pacman.h);
+    SDL_QueryTexture(PacManTexture, NULL, NULL, &pacman.w, &pacman.h);
 	pacman.w = SCALE;
 	pacman.h = SCALE;
 	//this rectangle could have had its x and y coordinates set over here, but they will be assigned to the x and y coordinates of the structure player.
@@ -937,7 +942,7 @@ int main()
 	SDL_Surface *BlinkySurface = IMG_Load("blinky.png");
 	SDL_Texture *BlinkyTexture = SDL_CreateTextureFromSurface(renderer, BlinkySurface);
 	SDL_Rect blinkyrect;
-	SDL_QueryTexture(BlinkySurface, NULL, NULL, &blinkyrect.w, &blinkyrect.h);
+    SDL_QueryTexture(BlinkyTexture, NULL, NULL, &blinkyrect.w, &blinkyrect.h);
 	blinkyrect.w = SCALE;
 	blinkyrect.h = SCALE;
 
@@ -945,21 +950,21 @@ int main()
 	SDL_Surface *InkySurface = IMG_Load("inkyright.png");
 	SDL_Texture *InkyTexture = SDL_CreateTextureFromSurface(renderer, InkySurface);
 	SDL_Rect inkyrect;
-	SDL_QueryTexture(InkyTexture, NULL, NULL, &inkyrect.w, &inkyrect.h);
+    SDL_QueryTexture(InkyTexture, NULL, NULL, &inkyrect.w, &inkyrect.h);
 	inkyrect.w = SCALE;
 	inkyrect.h = SCALE;
 
 	SDL_Surface *PinkySurface = IMG_Load("pinkyright.png");
 	SDL_Texture *PinkyTexture = SDL_CreateTextureFromSurface(renderer, PinkySurface);
 	SDL_Rect pinkyrect;
-	SDL_QueryTexture(PinkyTexture, NULL, NULL, &pinkyrect.w, &pinkyrect.h);
+    SDL_QueryTexture(PinkyTexture, NULL, NULL, &pinkyrect.w, &pinkyrect.h);
 	pinkyrect.w = SCALE;
 	pinkyrect.h = SCALE;
 
 	SDL_Surface *ClydeSurface = IMG_Load("clyderight.png");
 	SDL_Texture *ClydeTexture = SDL_CreateTextureFromSurface(renderer, ClydeSurface);
 	SDL_Rect clyderect;
-	SDL_QueryTexture(ClydeTexture, NULL, NULL, &clyderect.w, &clyderect.h);
+    SDL_QueryTexture(ClydeTexture, NULL, NULL, &clyderect.w, &clyderect.h);
 	clyderect.w = SCALE;
 	clyderect.h = SCALE;
 
@@ -1097,7 +1102,7 @@ int main()
 		SDL_Surface *PacMan = IMG_Load(pacmanimage);
 		SDL_Texture *PacManTexture = SDL_CreateTextureFromSurface(renderer, PacMan);
 		SDL_Rect pacman;
-		SDL_QueryTexture(PacMan, NULL, NULL, &pacman.w, &pacman.h);
+		SDL_QueryTexture(PacManTexture, NULL, NULL, &pacman.w, &pacman.h);
 
 		pacman.w = SCALE;
 		pacman.h = SCALE;
